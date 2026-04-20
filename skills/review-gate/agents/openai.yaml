@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Gate"
+  short_description: "Decide merge eligibility for one remediation unit"
+  default_prompt: "Apply the github-security-agent review gate to the prepared remediation unit and decide whether the correct outcome is merged, opened_pr, blocked, skipped, or failed."

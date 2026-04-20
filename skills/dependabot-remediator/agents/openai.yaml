@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dependabot Remediator"
+  short_description: "Patch Dependabot alerts using one selected profile"
+  default_prompt: "Use the github-security-agent Dependabot remediator skill to patch open Dependabot alerts for the selected profile, skip manual_only and ignored repository entries, and merge only if the review gate passes with a lockfile-only diff."

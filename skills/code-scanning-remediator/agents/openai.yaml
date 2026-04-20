@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Scanning Remediator"
+  short_description: "Patch allowlisted deterministic code-scanning findings"
+  default_prompt: "Use the github-security-agent code-scanning remediator skill to fix allowlisted deterministic code-scanning findings for the selected profile, keep the diff minimal, and merge only if the review gate passes."

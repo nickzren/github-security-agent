@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Scanning Triage"
+  short_description: "Classify code-scanning alerts for one selected profile"
+  default_prompt: "Use the github-security-agent code-scanning triage skill to inspect open code-scanning alerts for the selected profile, distinguish disabled or missing analysis coverage, and hand only allowlisted deterministic findings to remediation."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Secret Scanning Response"
+  short_description: "Triage secret-scanning alerts and prepare cleanup PRs"
+  default_prompt: "Use the github-security-agent secret-scanning response skill to classify open secret-scanning alerts for the selected profile, prepare deterministic cleanup PRs when safe, and record any required manual follow-up actions."

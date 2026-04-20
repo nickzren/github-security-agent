@@ -1,0 +1,184 @@
+profile:
+  profile_id: acme-org
+  owner: acme
+  owner_type: org
+  supported_alert_classes:
+    - dependabot
+    - code_scanning
+    - secret_scanning
+
+  auth:
+    github_host: github.com
+    provider: gh
+    supported_auth_modes:
+      - classic_pat
+      - fine_grained_pat
+    required_capabilities:
+      - read_repository_metadata
+      - read_security_alerts
+      - push_branches
+      - open_and_update_pull_requests
+      - read_workflow_and_check_status
+      - merge_pull_requests_when_policy_allows
+
+  runtime:
+    local_clone_root: /absolute/path/to/github.com/acme
+    clone_handling_mode: precloned_only
+    clone_refresh_policy: fetch_existing_only
+    execution_mode: local_first
+    required_tools:
+      - git
+      - gh
+      - uv
+      - npm
+
+  concurrency:
+    lock_filename: .github-security-agent.{profile_id}.lock
+    stale_lock_ttl_seconds: 7200
+
+  verification:
+    default_timeout_seconds: 1200
+    environment_allowlist:
+      - NPM_TOKEN
+      - PRIVATE_PYPI_TOKEN
+      - PRIVATE_MAVEN_TOKEN
+    dotenv_path: null
+    secret_redaction_patterns:
+      - "(?i)token"
+      - "(?i)secret"
+
+  defaults:
+    automation_mode: manual_only
+    default_base_branch: auto
+    branch_template: security/{alert_class}/{target_id}/{remediation_key_short}
+    pr_title_template: "chore(security): remediate {target_id} alerts"
+    pr_labels:
+      - sec-agent
+    pr_metadata_fields:
+      schema_version: schema_version
+      remediation_key: remediation_key
+      alert_class: alert_class
+      target_id: target_id
+      base_branch: base_branch
+      advisory_ids: advisory_ids
+      alert_number: alert_number
+      secret_type: secret_type
+      agent_version: agent_version
+      last_pass_at: last_pass_at
+    outcome_statuses:
+      - merged
+      - opened_pr
+      - blocked
+      - skipped
+      - failed
+    reason_code_vocabulary: docs/operating-model.md
+    auto_merge:
+      require_review_gate: true
+      require_local_verification: true
+      require_required_checks_per_branch_protection: true
+      merge_strategy: two_pass
+      ecosystem_rules:
+        npm:
+          allow_lockfile_only: true
+          forbid_manifest_changes: true
+        pip:
+          allow_lockfile_only: true
+          require_fully_pinned_requirements_txt_as_lockfile: true
+          forbid_manifest_changes: true
+        uv:
+          allow_lockfile_only: true
+          forbid_manifest_changes: true
+      unlisted_ecosystem_outcome: opened_pr
+    code_scanning:
+      allowlisted_rules:
+        - actions/missing-workflow-permissions
+      auto_merge_rules:
+        - actions/missing-workflow-permissions
+      unlisted_rule_outcome: skipped
+      pr_title_template: "fix(code-scanning): remediate {rule_id} in {target_id}"
+    secret_scanning:
+      prepare_cleanup_prs: true
+      auto_merge: false
+      allow_placeholder_replacements: true
+      allow_ignore_patterns: false
+      pr_title_template: "fix(secret-scanning): remove {secret_type} from {target_id}"
+    native_dependabot_pr_strategy: adopt_first
+    native_dependabot_head_branch_prefix: dependabot/
+
+repositories:
+  - repo: platform-api
+    local_path: /absolute/path/to/github.com/acme/platform-api
+    automation_mode: active
+    default_base_branch: main
+    targets:
+      - target_id: api
+        path: .
+        alert_classes:
+          - dependabot
+          - code_scanning
+          - secret_scanning
+        ecosystems:
+          - uv
+        verification_commands:
+          - uv sync --locked --extra dev
+          - uv run pytest -q
+        verification_workdir: .
+        required_env_vars:
+          - PRIVATE_PYPI_TOKEN
+        supported_platforms:
+          - darwin
+          - linux
+        verification_timeout_seconds: 1200
+        platform_constraints:
+          - private package index access is required for full verification
+
+  - repo: web-portal
+    local_path: /absolute/path/to/github.com/acme/web-portal
+    automation_mode: active
+    default_base_branch: main
+    targets:
+      - target_id: web
+        path: .
+        alert_classes:
+          - dependabot
+          - code_scanning
+          - secret_scanning
+        ecosystems:
+          - npm
+        verification_commands:
+          - npm ci
+          - npm test
+          - npm run build
+        verification_workdir: .
+        required_env_vars:
+          - NPM_TOKEN
+        supported_platforms:
+          - darwin
+          - linux
+        verification_timeout_seconds: 1200
+        platform_constraints: []
+
+  - repo: batch-ingest
+    local_path: /absolute/path/to/github.com/acme/batch-ingest
+    automation_mode: manual_only
+    manual_only_reason: verification requires a Linux runner and private Maven registry access
+    default_base_branch: main
+    targets:
+      - target_id: root
+        path: .
+        alert_classes:
+          - dependabot
+          - code_scanning
+          - secret_scanning
+        ecosystems:
+          - maven
+        verification_commands:
+          - mvn -q -DskipTests package
+        verification_workdir: .
+        required_env_vars:
+          - PRIVATE_MAVEN_TOKEN
+        supported_platforms:
+          - linux
+        verification_timeout_seconds: 1200
+        platform_constraints:
+          - verification requires a Linux runner and private Maven registry access

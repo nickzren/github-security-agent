@@ -1,0 +1,11 @@
+# Local planning notes — keep out of the public scaffold.
+PLAN.md
+
+# Local editor/runtime state — keep out of the public scaffold.
+.claude/
+
+# Account-specific profiles — keep out of the public scaffold.
+profiles/local/
+
+# OS
+.DS_Store

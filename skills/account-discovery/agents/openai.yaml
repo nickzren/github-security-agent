@@ -1,0 +1,4 @@
+interface:
+  display_name: "Account Discovery"
+  short_description: "Validate a profile and local clone inventory"
+  default_prompt: "Validate the selected github-security-agent profile, confirm the runtime contract, and map all repository entries and target_id values before any remediation work starts."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Run Reporting"
+  short_description: "Summarize remediation outcomes and blockers"
+  default_prompt: "Summarize the github-security-agent run using the fixed outcome model and include per-unit status, pull request links, and remaining blockers."
