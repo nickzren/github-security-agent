@@ -2,20 +2,20 @@
 
 ## Clone Handling
 
-V1 assumes repositories are already cloned locally under the configured clone root.
+The scaffold assumes repositories are already cloned locally under the configured clone root.
 
 - the framework may validate configured local paths
 - the framework may fetch or refresh existing clones when policy allows
-- the framework must not create new clones automatically in v1
+- the framework must not create new clones automatically
 - a missing local path should result in `blocked` or `skipped` with reason `clone_missing`, not an implicit clone step
 
 ## Execution Model
 
-V1 is local-first and pre-cloned.
+Execution is local-first and pre-cloned.
 
 - the framework runs on a machine with direct access to the configured clone root
 - unattended cron-style runs are compatible with this model
-- GitHub Actions-first execution is not part of the v1 contract
+- GitHub Actions-first execution is not part of this contract
 - one locked run should exhaust eligible `Dependabot` work in `active` repository entries before it exits
 - after `Dependabot` converges, the same locked run may triage and remediate allowlisted deterministic `code scanning` findings in `active` repository entries
 - after `code scanning` converges, the same locked run may triage and respond to eligible `secret scanning` alerts in `active` repository entries
@@ -59,12 +59,12 @@ Do not silently skip verification because of environment mismatch. Report the bl
 
 ## GitHub Authentication
 
-V1 supports `gh` with a PAT-style auth model only.
+Authentication uses `gh` with a PAT-style auth model only.
 
 - supported: classic PAT exposed through `gh auth`
 - supported: fine-grained PAT exposed through `gh auth`
-- not supported in v1: GitHub App auth
-- not supported in v1: `GITHUB_TOKEN`-only Actions execution
+- not supported: GitHub App auth
+- not supported: `GITHUB_TOKEN`-only Actions execution
 
 The authenticated GitHub identity must have enough capability to:
 
@@ -81,7 +81,7 @@ The framework should not assume administrative access unless a specific profile 
 
 ## Concurrency
 
-V1 allows one active run per profile at a time.
+One active run per profile is allowed at a time.
 
 - the lock file is `{clone_root}/.github-security-agent.{profile_id}.lock`
 - the lock record captures at least the PID, start time, and stale-lock TTL
@@ -125,7 +125,7 @@ This metadata is advisory only. It helps human readers and agent-managed PR reus
 
 ## Reason Codes
 
-Every non-`merged`, non-`opened_pr` outcome must carry a reason code from the closed v1 vocabulary defined in `operating-model.md`. Do not invent new reason codes in v1.
+Every non-`merged`, non-`opened_pr` outcome must carry a reason code from the closed reason-code vocabulary defined in `operating-model.md`. Do not invent new reason codes.
 
 ## Failure Behavior
 

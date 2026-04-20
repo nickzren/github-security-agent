@@ -56,7 +56,7 @@ For `secret_scanning`, the normalized remediation key must also include the GitH
 
 When one remediation unit needs finer distinction because the underlying alert set changed materially, the framework may append a normalized alert-set hash. The base remediation key must remain stable across runs.
 
-For v1, an alert-set change is material only when a new advisory enters scope and is not satisfied by the currently selected fix, or when the smallest patched version allowed by policy changes. CVSS rescoring, advisory text edits, or other metadata-only updates do not create a new remediation unit.
+An alert-set change is material only when a new advisory enters scope and is not satisfied by the currently selected fix, or when the smallest patched version allowed by policy changes. CVSS rescoring, advisory text edits, or other metadata-only updates do not create a new remediation unit.
 
 Do not combine unrelated targets into one pull request.
 
@@ -66,7 +66,7 @@ Agent-managed branches follow the template `security/{alert_class}/{target_id}/{
 
 ## Native PR Strategy
 
-For `Dependabot`, v1 uses `adopt-first` behavior.
+For `Dependabot`, the scaffold uses `adopt-first` behavior.
 
 - native Dependabot PR matching is candidate discovery only: `owner/repo + base_branch + manifest_path + package_ecosystem + head_branch_prefix`, where `head_branch_prefix` comes from the selected profile and defaults to `dependabot/` in the public template
 - native PR candidates are re-evaluated structurally on every pass; PR body metadata is advisory only
@@ -90,7 +90,7 @@ Every processed remediation unit should end in exactly one outcome:
 - `skipped`: intentionally not processed because of policy or unsupported scope
 - `failed`: execution error or unrecoverable tooling failure
 
-Reason codes use a closed v1 vocabulary and must be reported consistently:
+Reason codes use a closed reason-code vocabulary and must be reported consistently:
 
 - `superseded`
 - `advisory_withdrawn`
@@ -119,7 +119,7 @@ Reason codes use a closed v1 vocabulary and must be reported consistently:
 
 ## Merge Timing
 
-V1 uses a two-pass merge model.
+The scaffold uses a two-pass merge model.
 
 - remediation pass: discover alerts, adopt or open PRs, and apply the review gate using current status
 - merge pass: re-evaluate existing PRs and merge only after checks are green

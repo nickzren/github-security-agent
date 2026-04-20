@@ -36,7 +36,7 @@ Every run should produce exactly one summary per remediation unit, reflecting th
 - summarize all processed remediation units
 - report all skipped repository entries with the reason
 - report all blocked units with the specific blocker
-- report any reason code using the closed v1 vocabulary defined in `docs/operating-model.md`
+- report any reason code using the closed reason-code vocabulary defined in `docs/operating-model.md`
 - distinguish unsupported alert classes from execution failures
 - do not mark a unit `merged` unless the actual merge completed
 - report remaining open `Dependabot` alerts after the exhausted run and explain whether they are waiting on `opened_pr`, blocked by policy or environment, or outside current remediation scope

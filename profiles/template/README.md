@@ -43,7 +43,7 @@ Missing required environment variables should resolve to `env_mismatch` or `regi
 
 `platform_constraints` is descriptive metadata, not an execution gate by itself. Use it to explain why a target stays `manual_only`, why a repository is review-required, or what operator assumption a run should surface in reporting.
 
-`defaults.auto_merge.ecosystem_rules` defines per-ecosystem diff constraints for v1 automatic merge. Any ecosystem not listed in `ecosystem_rules` falls back to `unlisted_ecosystem_outcome` (default `opened_pr`). These profile fields are the live source of truth for remediation and review skills.
+`defaults.auto_merge.ecosystem_rules` defines per-ecosystem diff constraints for automatic merge. Any ecosystem not listed in `ecosystem_rules` falls back to `unlisted_ecosystem_outcome` (default `opened_pr`). These profile fields are the live source of truth for remediation and review skills.
 
 That fallback is how manifest-review-only ecosystems such as `maven` can still enter remediation while remaining review-required instead of silently unsupported.
 
@@ -53,6 +53,6 @@ That fallback is how manifest-review-only ecosystems such as `maven` can still e
 
 `defaults.secret_scanning` defines whether deterministic cleanup PRs may be prepared, whether placeholder or environment-variable replacement is allowed, whether ignore-pattern based cleanup is allowed, and the title template for review-required cleanup PRs. Secret-scanning pull requests are never auto-merged by this scaffold, and these fields are enforced by the secret-scanning response skill and review gate.
 
-Reason codes returned by skills must come from the closed v1 vocabulary documented in `docs/operating-model.md`.
+Reason codes returned by skills must come from the closed reason-code vocabulary documented in `docs/operating-model.md`.
 
 Use the template file in this directory as the starting point for new adopters.

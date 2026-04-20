@@ -19,7 +19,7 @@ Read these files before changing anything:
 
 ## Scope
 
-- V1 covers `Dependabot` only.
+- This skill covers `Dependabot` only.
 - The remediation unit is one repository entry, one base branch, and one `target_id`.
 - Use one deduplicated pull request per remediation unit.
 - Within `active` repository entries, a locked run should exhaust eligible `Dependabot` work before it exits.
@@ -38,7 +38,7 @@ Read these files before changing anything:
    - `ignored`: skip and report the configured reason
 8. Resolve the target base branch from profile data.
 9. Compute the remediation dedup key from `owner/repo`, alert class, base branch, and `target_id`.
-10. Decide whether the alert set has changed materially. In v1 a change is material only when a new advisory enters scope and is not satisfied by the currently selected fix, or when the smallest patched version allowed by policy changes. CVSS rescoring and other metadata-only updates do not create a new remediation unit.
+10. Decide whether the alert set has changed materially. A change is material only when a new advisory enters scope and is not satisfied by the currently selected fix, or when the smallest patched version allowed by policy changes. CVSS rescoring and other metadata-only updates do not create a new remediation unit.
 11. Look for an existing native Dependabot PR that is a structural candidate for the remediation unit by `owner/repo + base_branch + manifest_path + package_ecosystem + head_branch_prefix`, where `head_branch_prefix` comes from the selected profile's `defaults.native_dependabot_head_branch_prefix`.
 12. Re-evaluate every native PR candidate structurally on every pass. PR body metadata is advisory only and is not the adoption source of truth.
 13. Adopt a native PR only when it has current advisory-set equivalence with the active alert set and still represents the smallest patched fix allowed by policy.
@@ -55,14 +55,14 @@ Read these files before changing anything:
 21. In the remediation pass, open or update the deduplicated PR. If required GitHub checks defined by branch protection are still pending, stop at `opened_pr` for that remediation unit and continue processing the rest of the profile.
 22. In the merge pass, merge the PR through the GitHub merge API only when the review gate still allows `merged`. For an adopted native PR, merge the existing PR; never push to its branch.
 23. After every merge, re-query open `Dependabot` alerts before deciding the run is complete.
-24. End the run only when every remaining open `Dependabot` alert in active scope is represented by `opened_pr`, `blocked`, `skipped`, or `failed`, or is outside v1 remediation scope.
+24. End the run only when every remaining open `Dependabot` alert in active scope is represented by `opened_pr`, `blocked`, `skipped`, or `failed`, or is outside current remediation scope.
 25. Release the concurrency lock when the run ends.
 
 ## Execution Rules
 
-- Do not create new clones in v1.
+- Do not create new clones.
 - Do not mutate `manual_only` or `ignored` repository entries.
-- Use `gh` plus PAT-style authentication only in v1.
+- Use `gh` plus PAT-style authentication only.
 - Do not auto-merge unless the diff satisfies the selected profile's `defaults.auto_merge.ecosystem_rules`, with `unlisted_ecosystem_outcome` applied for ecosystems the profile does not list.
 - Do not broaden dependency updates when a smaller patched fix exists.
 - Prefer adopting a usable native Dependabot PR over opening an agent-managed replacement.
@@ -71,7 +71,7 @@ Read these files before changing anything:
 - Required GitHub checks are determined by branch protection on the base branch.
 - Optional static labels may be applied for categorization, but they are not part of the remediation dedup contract.
 - Do not wait indefinitely for GitHub checks in a single iteration. Revisit each `opened_pr` unit on later iterations of the same locked run and merge it when required checks turn green and the review gate still passes.
-- Use the closed v1 reason-code vocabulary defined in `../../docs/operating-model.md` for every `blocked`, `skipped`, or `failed` outcome. Do not invent new reason codes.
+- Use the closed reason-code vocabulary defined in `../../docs/operating-model.md` for every `blocked`, `skipped`, or `failed` outcome. Do not invent new reason codes.
 
 ## Expected Output
 
@@ -83,4 +83,4 @@ Summarize each remediation unit as one of:
 - `skipped`
 - `failed`
 
-Attach a v1 reason code from the closed vocabulary to every non-`merged`, non-`opened_pr` outcome.
+Attach a reason code from the closed vocabulary to every non-`merged`, non-`opened_pr` outcome.

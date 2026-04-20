@@ -24,7 +24,7 @@ This skill validates execution inputs. It does not patch repositories, open pull
 1. Identify the selected `profile`.
 2. Validate the runtime contract defined by the profile.
 3. Confirm the GitHub owner and account type.
-4. Confirm the profile is using the supported `gh` plus PAT-style auth model for v1.
+4. Confirm the profile is using the supported `gh` plus PAT-style auth model.
 5. Confirm the authenticated GitHub identity satisfies the required capabilities declared in the profile.
 6. Inspect `{clone_root}/.github-security-agent.{profile_id}.lock`. Report whether the lock is absent, active, or stale so a remediation run can decide whether to acquire it.
 7. Enumerate `repository entry` values from the profile.
@@ -49,14 +49,14 @@ This skill validates execution inputs. It does not patch repositories, open pull
 
 ## Execution Rules
 
-- Do not create new clones in v1.
+- Do not create new clones.
 - Do not infer missing profile data from repository state.
 - Treat the profile as the source of truth.
 - Treat unsupported auth modes as contract failures.
 - Treat insufficient GitHub capabilities as contract failures.
 - Verify capabilities via direct endpoint probes (for example, a read of `/repos/{owner}/{repo}/dependabot/alerts`) rather than relying on `gh auth status` scope text, which may report stale cached scopes that do not reflect the active token's real capabilities.
 - Report contract errors clearly before any remediation skill runs.
-- Use the closed v1 reason-code vocabulary from `../../docs/operating-model.md` for any contract failure surfaced to reporting.
+- Use the closed reason-code vocabulary from `../../docs/operating-model.md` for any contract failure surfaced to reporting.
 
 ## Expected Output
 

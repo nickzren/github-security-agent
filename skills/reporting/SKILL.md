@@ -30,7 +30,7 @@ This skill does not patch repositories. It summarizes what happened.
 7. Record the incident triage state for every `secret_scanning` remediation unit.
 8. Record any manual follow-up actions for every `secret_scanning` remediation unit.
 9. Record any relevant `platform_constraints` when they explain why a target is `manual_only`, review-required, or blocked by environment/runtime assumptions.
-10. Record a v1 reason code for every `blocked`, `skipped`, and `failed` outcome.
+10. Record a reason code for every `blocked`, `skipped`, and `failed` outcome.
 11. Separate unsupported scope from execution failure.
 12. Distinguish remediation-pass results from merge-pass results.
 13. Record any concurrency lock recovery events for the run.
@@ -43,7 +43,7 @@ This skill does not patch repositories. It summarizes what happened.
 - Use `target_id` in every per-unit summary.
 - Include the remediation dedup key in every per-unit summary.
 - Do not describe a remediation unit as `merged` unless the merge actually completed via the GitHub merge API.
-- Use only the closed v1 reason-code vocabulary defined in `../../docs/operating-model.md`. Do not invent new reason codes.
+- Use only the closed reason-code vocabulary defined in `../../docs/operating-model.md`. Do not invent new reason codes.
 - Distinguish profile policy blocks from runtime contract failures.
 - Never log secret values. Never write secrets into the run report.
 

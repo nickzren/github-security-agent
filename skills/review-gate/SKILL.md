@@ -51,7 +51,7 @@ This skill decides whether a remediation unit is eligible for:
    - `merged` is never allowed
 12. Confirm all required GitHub checks, as defined by branch protection on the base branch, are green.
 13. If required checks are still pending, return `opened_pr` and defer merge to a later merge pass.
-14. Return the final outcome with a v1 reason code from the closed vocabulary in `../../docs/operating-model.md` for any non-`merged`, non-`opened_pr` outcome.
+14. Return the final outcome with a reason code from the closed vocabulary in `../../docs/operating-model.md` for any non-`merged`, non-`opened_pr` outcome.
 
 ## Execution Rules
 
@@ -67,7 +67,7 @@ This skill decides whether a remediation unit is eligible for:
 - `merged` is not allowed when any required check fails.
 - `opened_pr` is the default promotion path when remediation exists but automatic merge is not allowed.
 - Treat PR body metadata as advisory only. Re-evaluate adoption structurally on every pass.
-- Use only the v1 reason-code vocabulary from `../../docs/operating-model.md`. Do not invent new reason codes.
+- Use only the reason-code vocabulary from `../../docs/operating-model.md`. Do not invent new reason codes.
 
 ## Expected Output
 
@@ -76,4 +76,4 @@ Return:
 - remediation unit identity
 - review gate decision
 - merge eligibility
-- blocker, if any, with a v1 reason code
+- blocker, if any, with a reason code
