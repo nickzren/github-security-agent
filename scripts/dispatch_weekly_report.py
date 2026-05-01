@@ -27,6 +27,7 @@ except ModuleNotFoundError:  # pragma: no cover - used when running from scripts
 HEADING = "Weekly Security Report"
 WORKFLOW = "publish-weekly-report.yml"
 STALE_AFTER_DAYS = 9
+ALLOWED_PUBLISH_MUTATION_MODES = {"report_only", "pull_request"}
 
 
 @dataclass(frozen=True)
@@ -54,8 +55,9 @@ def prepare_dispatch(
     profile = _read_profile_contract(profile_path)
     _validate_repo_owner(profile["owner"], publish_repo, "publish repo")
     _validate_repo_owner(profile["owner"], issue_repo, "issue repo")
-    if profile["mutation_mode"] != "report_only":
-        raise ValueError("profile.defaults.mutation_mode must be report_only")
+    if profile["mutation_mode"] not in ALLOWED_PUBLISH_MUTATION_MODES:
+        allowed = ", ".join(sorted(ALLOWED_PUBLISH_MUTATION_MODES))
+        raise ValueError(f"profile.defaults.mutation_mode must be one of: {allowed}")
 
     latest_path = Path(latest_json)
     title = _issue_title(now, heading)

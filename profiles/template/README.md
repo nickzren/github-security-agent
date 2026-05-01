@@ -48,9 +48,9 @@ Missing required environment variables should resolve to `env_mismatch` or `regi
 
 That fallback is how manifest-review-only ecosystems such as `maven` can still enter remediation while remaining review-required instead of silently unsupported.
 
-`defaults.mutation_mode` defines what an unattended run may mutate. The first supported value is `report_only`, which permits discovery, alert reads, eligibility classification, rendering, and publish-only reporting, but forbids branch creation, pull request creation or update, pushes, and merges. Runners and dispatchers must fail closed when a report-only rollout expects `report_only` and the field is missing or different.
+`defaults.mutation_mode` defines what an unattended run may mutate. `report_only` permits discovery, alert reads, eligibility classification, rendering, and publish-only reporting, but forbids branch creation, pull request creation or update, pushes, and merges. `pull_request` permits branch creation, branch pushes, and pull request creation or update for `active` repository entries after the profile's verification and review-gate rules pass; it still forbids direct default-branch pushes and auto-merge. Runners and dispatchers must fail closed when the field is missing or outside the supported vocabulary.
 
-`scripts/run_report_only.py` enforces `defaults.mutation_mode: report_only`, reads open GitHub security alerts through `gh`, and writes local reporting artifacts under the profile clone root. The public weekly issue renderer must use only aggregate counts from those artifacts.
+`scripts/run_report_only.py` is the read-only discovery runner for report-only rollout checks. Auto-fix runs should execute the remediation skills, then write the same local reporting artifacts under the profile clone root. The public weekly issue renderer must use only aggregate counts from those artifacts.
 
 `defaults.native_dependabot_head_branch_prefix` defines the expected native Dependabot branch prefix for candidate discovery. The public template default is `dependabot/`.
 

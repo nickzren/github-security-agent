@@ -88,6 +88,32 @@ class WeeklyReportDispatcherTests(unittest.TestCase):
             self.assertIn("Team Security Weekly", request.issue_title)
             self.assertIn("## Team Security Weekly", body)
 
+    def test_accepts_pull_request_mutation_mode_for_publish_after_autofix(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            profile = write_profile(tmp, mutation_mode="pull_request")
+            latest = Path(tmp) / "latest.json"
+            latest.write_text(
+                json.dumps(
+                    {
+                        "generated_at": "2026-05-01T13:00:00Z",
+                        "repo_counts": {"active": 13, "manual_only": 13},
+                        "units": [{"alert_class": "dependabot", "outcome": "opened_pr"}],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            request = prepare_dispatch(
+                profile_path=profile,
+                latest_json=latest,
+                publish_repo="acme/github-security-agent",
+                issue_repo="acme/github-security-agent",
+                now=datetime(2026, 5, 1, 14, 0, tzinfo=timezone.utc),
+            )
+
+            body = decode_body(request.issue_body_gz_b64)
+            self.assertIn("Dependabot: 0 merged, 1 PR, 0 blocked", body)
+
     def test_stale_latest_json_publishes_stale_report_body(self):
         with tempfile.TemporaryDirectory() as tmp:
             profile = write_profile(tmp)
@@ -116,7 +142,7 @@ class WeeklyReportDispatcherTests(unittest.TestCase):
             self.assertIn("Last completed run: 2026-04-20T00:00:00+00:00", body)
 
 
-def write_profile(tmp):
+def write_profile(tmp, mutation_mode="report_only"):
     profile = Path(tmp) / "profile.yaml"
     profile.write_text(
         "\n".join(
@@ -125,7 +151,7 @@ def write_profile(tmp):
                 "  owner: 'acme' # public test owner",
                 "  defaults:",
                 "    automation_mode: manual_only",
-                "    mutation_mode: report_only",
+                f"    mutation_mode: {mutation_mode}",
             ]
         ),
         encoding="utf-8",

@@ -20,6 +20,13 @@ Each repository entry must declare one automation mode:
 
 `active` requires at least one real verification command for every enabled remediation target. If a repository entry cannot define real verification commands, it must remain `manual_only`.
 
+## Mutation Modes
+
+- `report_only`: read alerts and write local or public reports only; no branch creation, no pull request creation or update, no pushes, and no merges
+- `pull_request`: create or update remediation branches and pull requests for `active` repositories after verification allows it; no direct default-branch pushes and no auto-merge
+
+`manual_only` repository entries remain read/report-only under every mutation mode. Auto-merge requires a future explicit mutation mode; `pull_request` is not enough.
+
 A real verification command must:
 
 - exit non-zero on failure with no manual intervention
