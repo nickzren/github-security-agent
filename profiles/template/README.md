@@ -50,6 +50,8 @@ That fallback is how manifest-review-only ecosystems such as `maven` can still e
 
 `defaults.mutation_mode` defines what an unattended run may mutate. The first supported value is `report_only`, which permits discovery, alert reads, eligibility classification, rendering, and publish-only reporting, but forbids branch creation, pull request creation or update, pushes, and merges. Runners and dispatchers must fail closed when a report-only rollout expects `report_only` and the field is missing or different.
 
+`scripts/run_report_only.py` enforces `defaults.mutation_mode: report_only`, reads open GitHub security alerts through `gh`, and writes local reporting artifacts under the profile clone root. The public weekly issue renderer must use only aggregate counts from those artifacts.
+
 `defaults.native_dependabot_head_branch_prefix` defines the expected native Dependabot branch prefix for candidate discovery. The public template default is `dependabot/`.
 
 `defaults.code_scanning.allowlisted_rules` defines which code-scanning rules may enter remediation. `defaults.code_scanning.auto_merge_rules` is narrower: only those rules may merge automatically after the review gate passes. Rules outside the allowlist are report-only.

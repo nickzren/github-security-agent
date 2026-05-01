@@ -27,6 +27,7 @@ profile:
     clone_refresh_policy: fetch_existing_only
     execution_mode: local_first
     required_tools:
+      - python3
       - git
       - gh
 

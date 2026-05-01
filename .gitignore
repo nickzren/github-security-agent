@@ -3,6 +3,9 @@ PLAN.md
 
 # Local editor/runtime state — keep out of the public scaffold.
 .claude/
+.github-security-agent/
+__pycache__/
+*.pyc
 
 # Account-specific profiles — keep out of the public scaffold.
 profiles/local/

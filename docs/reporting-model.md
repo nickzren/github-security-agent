@@ -19,7 +19,7 @@ Every run should produce exactly one summary per remediation unit, reflecting th
 - remediation dedup key
 - alert class
 - rule id, when the alert class is `code_scanning`
-- alert number and secret type, when the alert class is `secret_scanning`
+- alert number, when the alert class is `secret_scanning`
 - incident triage state, when the alert class is `secret_scanning`
 - PR source: native_dependabot or agent_managed
 - pass type: remediation or merge
@@ -50,3 +50,4 @@ Every run should produce exactly one summary per remediation unit, reflecting th
 - report remaining open `code scanning` alerts by rule and explain whether they are unsupported, blocked by policy, disabled at the repository level, or missing analysis
 - report remaining open `secret_scanning` alerts with their incident triage state and required manual follow-up actions, and explain whether they are awaiting cleanup PR review, blocked by policy, or disabled at the repository level
 - surface relevant `platform_constraints` for manual-only, review-required, or env-mismatch cases when they explain the operator action needed
+- public weekly issue output must stay counts-only: no repository names, secret types, alert numbers, or raw alert payloads
