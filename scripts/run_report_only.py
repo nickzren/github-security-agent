@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -93,6 +94,7 @@ def build_report_summary(
 ) -> dict[str, Any]:
     timestamp = _format_utc(now or datetime.now(timezone.utc))
     repo_counts = {"active": 0, "manual_only": 0, "ignored": 0}
+    open_alert_counts: Counter[str] = Counter()
     units: list[dict[str, Any]] = []
     notes: list[dict[str, str]] = []
 
@@ -117,6 +119,7 @@ def build_report_summary(
                 )
                 continue
 
+            open_alert_counts[alert_class] += len(alerts)
             for alert in alerts:
                 units.append(_unit_for_alert(profile.owner, repo, alert_class, alert))
 
@@ -127,6 +130,12 @@ def build_report_summary(
         "profile_id": profile.profile_id,
         "owner": profile.owner,
         "repo_counts": repo_counts,
+        "open_alert_counts": {
+            "dependabot": open_alert_counts["dependabot"],
+            "code_scanning": open_alert_counts["code_scanning"],
+            "secret_scanning": open_alert_counts["secret_scanning"],
+            "total": sum(open_alert_counts.values()),
+        },
         "units": units,
         "notes": notes,
     }

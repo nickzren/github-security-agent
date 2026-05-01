@@ -10,6 +10,7 @@ Every run should produce exactly one summary per remediation unit, reflecting th
 - GitHub owner
 - active repository count
 - manual-only repository count
+- sanitized open alert counts by alert class, when available
 
 ## Required Summary Fields
 
@@ -50,4 +51,5 @@ Every run should produce exactly one summary per remediation unit, reflecting th
 - report remaining open `code scanning` alerts by rule and explain whether they are unsupported, blocked by policy, disabled at the repository level, or missing analysis
 - report remaining open `secret_scanning` alerts with their incident triage state and required manual follow-up actions, and explain whether they are awaiting cleanup PR review, blocked by policy, or disabled at the repository level
 - surface relevant `platform_constraints` for manual-only, review-required, or env-mismatch cases when they explain the operator action needed
+- if the weekly renderer uses a GitHub security overview fallback, include only sanitized aggregate open-alert counts by class and make clear they are dashboard counts, not remediation results
 - public weekly issue output must stay counts-only: no repository names, secret types, alert numbers, or raw alert payloads

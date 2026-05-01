@@ -58,11 +58,13 @@ class WeeklyReportDispatcherTests(unittest.TestCase):
     def test_missing_latest_json_publishes_no_completed_run_body(self):
         with tempfile.TemporaryDirectory() as tmp:
             profile = write_profile(tmp)
+            overview = write_security_overview(tmp)
             request = prepare_dispatch(
                 profile_path=profile,
                 latest_json=Path(tmp) / "missing.json",
                 publish_repo="acme/github-security-agent",
                 issue_repo="acme/github-security-agent",
+                security_overview_json=overview,
                 now=datetime(2026, 5, 1, tzinfo=timezone.utc),
             )
 
@@ -70,7 +72,9 @@ class WeeklyReportDispatcherTests(unittest.TestCase):
             self.assertEqual(request.publish_repo, "acme/github-security-agent")
             self.assertEqual(request.issue_repo, "acme/github-security-agent")
             self.assertIn("Weekly Security Report", request.issue_title)
-            self.assertIn("No completed run this week.", body)
+            self.assertIn("No completed security-agent run this week.", body)
+            self.assertIn("GitHub open alerts:", body)
+            self.assertIn("- Total: 6", body)
 
     def test_accepts_custom_heading(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -134,12 +138,14 @@ class WeeklyReportDispatcherTests(unittest.TestCase):
                 latest_json=latest,
                 publish_repo="acme/github-security-agent",
                 issue_repo="acme/github-security-agent",
+                security_overview_json=write_security_overview(tmp),
                 now=datetime(2026, 5, 1, tzinfo=timezone.utc),
             )
 
             body = decode_body(request.issue_body_gz_b64)
             self.assertIn("Stale report.", body)
             self.assertIn("Last completed run: 2026-04-20T00:00:00+00:00", body)
+            self.assertIn("- Total: 6", body)
 
 
 def write_profile(tmp, mutation_mode="report_only"):
@@ -157,6 +163,24 @@ def write_profile(tmp, mutation_mode="report_only"):
         encoding="utf-8",
     )
     return profile
+
+
+def write_security_overview(tmp):
+    overview = Path(tmp) / "security-overview.json"
+    overview.write_text(
+        json.dumps(
+            {
+                "open_alert_counts": {
+                    "dependabot": 3,
+                    "code_scanning": 2,
+                    "secret_scanning": 1,
+                    "total": 6,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    return overview
 
 
 if __name__ == "__main__":

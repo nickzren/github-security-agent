@@ -52,7 +52,7 @@ Every locked run writes one JSON Lines record per remediation unit to `{clone_ro
 
 ## Weekly Reporting
 
-The scaffold includes a report-only weekly issue path. Use [scripts/run_report_only.py](scripts/run_report_only.py) to read open GitHub security alerts and write the local `latest.json`, [scripts/render_weekly_report.py](scripts/render_weekly_report.py) to turn that summary into compact Markdown, then [scripts/dispatch_weekly_report.py](scripts/dispatch_weekly_report.py) to dispatch [.github/workflows/publish-weekly-report.yml](.github/workflows/publish-weekly-report.yml). The dispatcher requires explicit `--publish-repo`, `--issue-repo`, and a profile with `defaults.mutation_mode: report_only`; pass `--heading` for account-specific issue titles. The published issue body is counts-only and must not include repository names, secret types, alert numbers, or raw alert payloads.
+The scaffold includes a report-only weekly issue path. Use [scripts/run_report_only.py](scripts/run_report_only.py) to read open GitHub security alerts and write the local `latest.json`, [scripts/collect_github_security_overview.py](scripts/collect_github_security_overview.py) to collect sanitized fallback alert counts, [scripts/render_weekly_report.py](scripts/render_weekly_report.py) to turn the summary into compact Markdown, then [scripts/dispatch_weekly_report.py](scripts/dispatch_weekly_report.py) to dispatch [.github/workflows/publish-weekly-report.yml](.github/workflows/publish-weekly-report.yml). The dispatcher requires explicit `--publish-repo`, `--issue-repo`, and a supported `defaults.mutation_mode`; pass `--heading` for account-specific issue titles. The published issue body is counts-only and must not include repository names, secret types, alert numbers, or raw alert payloads.
 
 ## Repository Layout
 
@@ -79,6 +79,11 @@ profiles/
   template/
   examples/
   local/          # gitignored account-specific overlays
+scripts/
+  collect_github_security_overview.py
+  dispatch_weekly_report.py
+  render_weekly_report.py
+  run_report_only.py
 ```
 
 ## Skills

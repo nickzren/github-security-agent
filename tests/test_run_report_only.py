@@ -47,6 +47,10 @@ class ReportOnlyRunnerTests(unittest.TestCase):
             self.assertEqual(summary["profile_id"], "acme-local")
             self.assertEqual(summary["owner"], "acme")
             self.assertEqual(summary["repo_counts"], {"active": 1, "manual_only": 1, "ignored": 1})
+            self.assertEqual(
+                summary["open_alert_counts"],
+                {"dependabot": 2, "code_scanning": 1, "secret_scanning": 1, "total": 4},
+            )
             self.assertEqual(len(summary["units"]), 4)
             self.assertEqual(
                 calls,

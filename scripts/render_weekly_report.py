@@ -6,11 +6,23 @@ from __future__ import annotations
 import argparse
 import json
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 
 DEFAULT_HEADING = "Weekly Security Report"
+
+
+@dataclass(frozen=True)
+class SecurityOverview:
+    dependabot: int = 0
+    code_scanning: int = 0
+    secret_scanning: int = 0
+
+    @property
+    def total(self) -> int:
+        return self.dependabot + self.code_scanning + self.secret_scanning
 
 
 def load_latest_json(path: str | Path) -> dict[str, Any]:
@@ -21,11 +33,24 @@ def load_latest_json(path: str | Path) -> dict[str, Any]:
     return data
 
 
-def render_weekly_report(summary: dict[str, Any], heading: str = DEFAULT_HEADING) -> str:
+def load_security_overview_json(path: str | Path) -> SecurityOverview:
+    with Path(path).open("r", encoding="utf-8") as handle:
+        data = json.load(handle)
+    if not isinstance(data, dict):
+        raise ValueError("security overview JSON must contain an object")
+    return security_overview_from_summary(data)
+
+
+def render_weekly_report(
+    summary: dict[str, Any],
+    heading: str = DEFAULT_HEADING,
+    security_overview: SecurityOverview | None = None,
+) -> str:
     units = list(_iter_units(summary))
     repo_counts = summary.get("repo_counts") or {}
     active_count = _first_int(repo_counts, "active", "active_repos", "active_repositories")
     manual_count = _first_int(repo_counts, "manual_only", "manual_only_repos", "manual_only_repositories")
+    overview = security_overview or security_overview_from_summary(summary)
 
     dependabot = _counts_for(units, "dependabot")
     code_scanning = _counts_for(units, "code_scanning")
@@ -54,6 +79,7 @@ def render_weekly_report(summary: dict[str, Any], heading: str = DEFAULT_HEADING
         ),
         "",
     ]
+    _append_security_overview(lines, overview)
 
     if manual_by_class:
         lines.append("Manual attention:")
@@ -74,6 +100,85 @@ def render_weekly_report(summary: dict[str, Any], heading: str = DEFAULT_HEADING
     lines.append(f"- {manual_count} manual-only repos checked")
 
     return "\n".join(lines).strip() + "\n"
+
+
+def render_no_completed_run(
+    heading: str = DEFAULT_HEADING,
+    security_overview: SecurityOverview | None = None,
+) -> str:
+    lines = [
+        f"## {heading}",
+        "",
+        "No completed security-agent run this week.",
+    ]
+    _append_security_overview(lines, security_overview)
+    _append_blank(lines)
+    lines.extend(
+        [
+            "Manual attention:",
+            "- Review automation runner: remediation report latest.json is missing.",
+            "",
+            "Notes:",
+            "- GitHub alert counts are dashboard counts only; no remediation pass completed.",
+        ]
+    )
+    return "\n".join(lines).strip() + "\n"
+
+
+def render_stale_report(
+    completed_at: str,
+    heading: str = DEFAULT_HEADING,
+    security_overview: SecurityOverview | None = None,
+) -> str:
+    lines = [
+        f"## {heading}",
+        "",
+        "Stale report.",
+    ]
+    _append_security_overview(lines, security_overview)
+    _append_blank(lines)
+    lines.extend(
+        [
+            "Manual attention:",
+            f"- Review automation runner: latest report is stale. Last completed run: {completed_at}",
+            "",
+            "Notes:",
+            "- GitHub alert counts are dashboard counts only; remediation details are stale.",
+        ]
+    )
+    return "\n".join(lines).strip() + "\n"
+
+
+def security_overview_from_summary(summary: dict[str, Any]) -> SecurityOverview:
+    counts = summary.get("open_alert_counts")
+    if not isinstance(counts, dict):
+        counts = summary
+    return SecurityOverview(
+        dependabot=_int_value(counts.get("dependabot")),
+        code_scanning=_int_value(counts.get("code_scanning")),
+        secret_scanning=_int_value(counts.get("secret_scanning")),
+    )
+
+
+def _append_security_overview(lines: list[str], overview: SecurityOverview | None) -> None:
+    if overview is None or overview.total == 0:
+        return
+    _append_blank(lines)
+    lines.extend(
+        [
+            "GitHub open alerts:",
+            f"- Dependabot: {overview.dependabot}",
+            f"- Code scanning: {overview.code_scanning}",
+            f"- Secret scanning: {overview.secret_scanning}",
+            f"- Total: {overview.total}",
+            "",
+        ]
+    )
+
+
+def _append_blank(lines: list[str]) -> None:
+    if lines and lines[-1] != "":
+        lines.append("")
 
 
 def _iter_units(summary: dict[str, Any]) -> list[dict[str, Any]]:
@@ -145,14 +250,30 @@ def _first_int(data: Any, *keys: str) -> int:
     return 0
 
 
+def _int_value(value: Any) -> int:
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("latest_json", help="Path to github-security-agent latest.json")
     parser.add_argument("--heading", default=DEFAULT_HEADING, help="Markdown heading text")
+    parser.add_argument("--security-overview-json", help="Optional sanitized GitHub open-alert counts JSON")
     parser.add_argument("--output", help="Write Markdown to this file instead of stdout")
     args = parser.parse_args()
 
-    markdown = render_weekly_report(load_latest_json(args.latest_json), heading=args.heading)
+    overview = load_security_overview_json(args.security_overview_json) if args.security_overview_json else None
+    markdown = render_weekly_report(
+        load_latest_json(args.latest_json),
+        heading=args.heading,
+        security_overview=overview,
+    )
     if args.output:
         Path(args.output).write_text(markdown, encoding="utf-8")
     else:

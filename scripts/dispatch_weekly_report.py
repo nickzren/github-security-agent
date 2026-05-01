@@ -19,9 +19,21 @@ except ModuleNotFoundError:  # pragma: no cover - depends on local environment
     yaml = None
 
 try:
-    from scripts.render_weekly_report import load_latest_json, render_weekly_report
+    from scripts.render_weekly_report import (
+        load_latest_json,
+        load_security_overview_json,
+        render_no_completed_run,
+        render_stale_report,
+        render_weekly_report,
+    )
 except ModuleNotFoundError:  # pragma: no cover - used when running from scripts/
-    from render_weekly_report import load_latest_json, render_weekly_report
+    from render_weekly_report import (
+        load_latest_json,
+        load_security_overview_json,
+        render_no_completed_run,
+        render_stale_report,
+        render_weekly_report,
+    )
 
 
 HEADING = "Weekly Security Report"
@@ -46,6 +58,7 @@ def prepare_dispatch(
     publish_repo: str,
     issue_repo: str,
     heading: str = HEADING,
+    security_overview_json: str | Path | None = None,
     now: datetime | None = None,
 ) -> DispatchRequest:
     now = now or datetime.now(timezone.utc)
@@ -61,19 +74,20 @@ def prepare_dispatch(
 
     latest_path = Path(latest_json)
     title = _issue_title(now, heading)
+    overview = load_security_overview_json(security_overview_json) if security_overview_json else None
     if not latest_path.exists():
-        body = f"## {heading}\n\nNo completed run this week.\n"
+        body = render_no_completed_run(heading=heading, security_overview=overview)
     else:
         summary = load_latest_json(latest_path)
         completed_at = _report_timestamp(summary, latest_path)
         if now - completed_at > timedelta(days=STALE_AFTER_DAYS):
-            body = (
-                f"## {heading}\n\n"
-                "Stale report.\n\n"
-                f"Last completed run: {completed_at.isoformat()}\n"
+            body = render_stale_report(
+                completed_at=completed_at.isoformat(),
+                heading=heading,
+                security_overview=overview,
             )
         else:
-            body = render_weekly_report(summary, heading=heading)
+            body = render_weekly_report(summary, heading=heading, security_overview=overview)
 
     encoded_body = _encode_body(body)
     command = [
@@ -202,6 +216,7 @@ def main() -> int:
     parser.add_argument("--publish-repo", required=True, help="Repository containing the publish workflow")
     parser.add_argument("--issue-repo", required=True, help="Repository where the issue is created or updated")
     parser.add_argument("--heading", default=HEADING, help="Weekly issue heading and title prefix")
+    parser.add_argument("--security-overview-json", help="Optional sanitized GitHub open-alert counts JSON")
     parser.add_argument("--dry-run", action="store_true", help="Print the dispatch command and do not call gh")
     args = parser.parse_args()
 
@@ -211,6 +226,7 @@ def main() -> int:
         publish_repo=args.publish_repo,
         issue_repo=args.issue_repo,
         heading=args.heading,
+        security_overview_json=args.security_overview_json,
     )
     if args.dry_run:
         print(json.dumps({"command": request.command, "issue_title": request.issue_title}, indent=2))

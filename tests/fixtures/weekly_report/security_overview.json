@@ -1,0 +1,19 @@
+{
+  "generated_at": "2026-05-01T13:05:00Z",
+  "open_alert_counts": {
+    "code_scanning": 2,
+    "dependabot": 3,
+    "secret_scanning": 1,
+    "total": 6
+  },
+  "owner": "acme",
+  "repo_scope": "profile",
+  "schema_version": 1,
+  "source": "github_profile_security_overview",
+  "unavailable_queries": {
+    "code_scanning": 0,
+    "dependabot": 0,
+    "secret_scanning": 0,
+    "total": 0
+  }
+}
