@@ -42,6 +42,7 @@ profile:
 
   defaults:
     automation_mode: active
+    mutation_mode: report_only
     default_base_branch: auto
     branch_template: security/{alert_class}/{target_id}/{remediation_key_short}
     pr_title_template: "chore(deps): remediate {target_id} security alerts"

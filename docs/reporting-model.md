@@ -2,10 +2,17 @@
 
 Every run should produce exactly one summary per remediation unit, reflecting the unit's final state for that run (not one entry per iteration of the exhaustive loop).
 
-## Required Summary Fields
+## Required Top-Level Summary Fields
 
+- `generated_at`: ISO 8601 UTC timestamp for when `latest.json` was rendered
+- `finished_at`: ISO 8601 UTC timestamp for when the locked remediation run finished
 - profile name
 - GitHub owner
+- active repository count
+- manual-only repository count
+
+## Required Summary Fields
+
 - repository name
 - base branch
 - `target_id`

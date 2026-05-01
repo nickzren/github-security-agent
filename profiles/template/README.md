@@ -16,6 +16,7 @@ Use this directory as the source of truth for profile field names and vocabulary
 - every supported target must declare a stable `target_id`
 - every active target must declare at least one real verification command; for dependency remediation this should exercise the dependency graph, and for metadata-only or secret-cleanup workflows it should provide relevant repository validation
 - the runtime contract belongs to the profile, not to ad hoc agent state
+- the profile-level `defaults.mutation_mode` field is the reviewable gate for unattended mutation
 - branch naming and PR metadata should support the remediation dedup key
 - optional static labels may be used for categorization, but they are not part of the remediation dedup contract
 
@@ -46,6 +47,8 @@ Missing required environment variables should resolve to `env_mismatch` or `regi
 `defaults.auto_merge.ecosystem_rules` defines per-ecosystem diff constraints for automatic merge. Any ecosystem not listed in `ecosystem_rules` falls back to `unlisted_ecosystem_outcome` (default `opened_pr`). These profile fields are the live source of truth for remediation and review skills.
 
 That fallback is how manifest-review-only ecosystems such as `maven` can still enter remediation while remaining review-required instead of silently unsupported.
+
+`defaults.mutation_mode` defines what an unattended run may mutate. The first supported value is `report_only`, which permits discovery, alert reads, eligibility classification, rendering, and publish-only reporting, but forbids branch creation, pull request creation or update, pushes, and merges. Runners and dispatchers must fail closed when a report-only rollout expects `report_only` and the field is missing or different.
 
 `defaults.native_dependabot_head_branch_prefix` defines the expected native Dependabot branch prefix for candidate discovery. The public template default is `dependabot/`.
 

@@ -1,0 +1,60 @@
+{
+  "profile": {
+    "profile_id": "acme-local",
+    "owner": "acme"
+  },
+  "generated_at": "2026-05-01T13:00:00Z",
+  "finished_at": "2026-05-01T12:59:00Z",
+  "repo_counts": {
+    "active": 13,
+    "manual_only": 13
+  },
+  "units": [
+    {
+      "repository": "example-app",
+      "alert_class": "dependabot",
+      "outcome": "merged"
+    },
+    {
+      "repository": "example-api",
+      "alert_class": "dependabot",
+      "outcome": "opened_pr"
+    },
+    {
+      "repository": "example-config",
+      "repository_mode": "manual_only",
+      "alert_class": "dependabot",
+      "outcome": "skipped",
+      "reason_code": "verification_unavailable",
+      "manual_follow_up_actions": [
+        "manual dependency review"
+      ]
+    },
+    {
+      "repository": "example-web",
+      "alert_class": "code_scanning",
+      "outcome": "merged",
+      "rule_id": "actions/missing-workflow-permissions"
+    },
+    {
+      "repository": "example-cli",
+      "repository_mode": "manual_only",
+      "alert_class": "code_scanning",
+      "outcome": "skipped",
+      "rule_id": "example/static-analysis-rule",
+      "manual_follow_up_actions": [
+        "manual code scanning review"
+      ]
+    },
+    {
+      "repository": "example-web",
+      "alert_class": "secret_scanning",
+      "outcome": "opened_pr",
+      "alert_number": 123,
+      "secret_type": "example_service_token",
+      "manual_follow_up_actions": [
+        "rotate or revoke credential"
+      ]
+    }
+  ]
+}

@@ -50,6 +50,10 @@ Public contracts live in `docs/`:
 
 Every locked run writes one JSON Lines record per remediation unit to `{clone_root}/.github-security-agent/runs/{profile_id}/{iso8601_utc}.jsonl`, plus a companion `latest.json` summary overwritten on each run. Blocked and skipped findings appear in the same report with their reason code and any relevant `platform_constraints` or manual follow-up actions. See [docs/reporting-model.md](docs/reporting-model.md) for the per-unit summary schema.
 
+## Weekly Reporting
+
+The scaffold includes a publish-only weekly issue path for already-rendered reports. Use [scripts/render_weekly_report.py](scripts/render_weekly_report.py) to turn `latest.json` into compact Markdown, then [scripts/dispatch_weekly_report.py](scripts/dispatch_weekly_report.py) to dispatch [.github/workflows/publish-weekly-report.yml](.github/workflows/publish-weekly-report.yml). The dispatcher requires explicit `--publish-repo`, `--issue-repo`, and a profile with `defaults.mutation_mode: report_only`; pass `--heading` for account-specific issue titles.
+
 ## Repository Layout
 
 ```text

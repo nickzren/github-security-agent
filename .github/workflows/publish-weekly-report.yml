@@ -1,0 +1,89 @@
+name: Publish weekly security report
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_title:
+        description: Exact weekly issue title
+        required: true
+        type: string
+      issue_body_gz_b64:
+        description: Gzip-compressed, base64-encoded Markdown body
+        required: true
+        type: string
+      issue_repo:
+        description: Repository where the weekly issue is created or updated
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate issue repo
+        env:
+          ISSUE_REPO: ${{ inputs.issue_repo }}
+          WORKFLOW_REPO: ${{ github.repository }}
+        run: |
+          if [ "$ISSUE_REPO" != "$WORKFLOW_REPO" ]; then
+            echo "issue_repo must match workflow repository for GITHUB_TOKEN publishing" >&2
+            exit 1
+          fi
+
+      - name: Decode issue body
+        env:
+          ISSUE_BODY_GZ_B64: ${{ inputs.issue_body_gz_b64 }}
+        run: |
+          python3 - <<'PY'
+          import base64
+          import gzip
+          import os
+          from pathlib import Path
+
+          encoded = os.environ["ISSUE_BODY_GZ_B64"]
+          body = gzip.decompress(base64.b64decode(encoded)).decode("utf-8")
+          Path("issue_body.md").write_text(body, encoding="utf-8")
+          PY
+
+      - name: Create or update weekly issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_REPO: ${{ inputs.issue_repo }}
+          ISSUE_TITLE: ${{ inputs.issue_title }}
+        run: |
+          gh issue list \
+            --repo "$ISSUE_REPO" \
+            --label weekly-security-report \
+            --state open \
+            --json number,title \
+            --limit 100 > issues.json
+
+          issue_number="$(python3 - <<'PY'
+          import json
+          import os
+
+          title = os.environ["ISSUE_TITLE"]
+          with open("issues.json", "r", encoding="utf-8") as handle:
+              issues = json.load(handle)
+          for issue in issues:
+              if issue.get("title") == title:
+                  print(issue["number"])
+                  break
+          PY
+          )"
+
+          if [ -n "$issue_number" ]; then
+            gh issue edit "$issue_number" \
+              --repo "$ISSUE_REPO" \
+              --body-file issue_body.md
+          else
+            gh issue create \
+              --repo "$ISSUE_REPO" \
+              --title "$ISSUE_TITLE" \
+              --body-file issue_body.md \
+              --label weekly-security-report
+          fi
