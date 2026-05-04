@@ -151,11 +151,11 @@ class WeeklyReportRendererTests(unittest.TestCase):
 
         self.assertIn("Patched by automation:", report)
         self.assertIn(
-            "- public-app: [chore(deps): remediate root security alerts](https://github.com/nickzren/public-app/pull/2)",
+            "- public-app: [Dependabot remediation PR](https://github.com/nickzren/public-app/pull/2)",
             report,
         )
         self.assertIn("- public-web: [Secret scanning cleanup PR](https://github.com/nickzren/public-web/pull/3)", report)
-        self.assertIn("- Private or undisclosed repos: 2 PRs opened or updated", report)
+        self.assertIn("- Private or undisclosed repos: 2 PRs created, updated, or merged", report)
         self.assertIn("Manual review required:", report)
         self.assertIn("- public-cli: code scanning 1 (unsupported_rule)", report)
         self.assertIn("- Private or undisclosed repos: 1 manual-review item", report)
@@ -164,6 +164,40 @@ class WeeklyReportRendererTests(unittest.TestCase):
         self.assertNotIn("private-config", report)
         self.assertNotIn("example_service_token", report)
         self.assertNotIn("remove token", report)
+
+    def test_public_details_sanitize_freeform_reasons_and_pr_titles(self):
+        report = render_weekly_report(
+            {
+                "owner": "nickzren",
+                "repo_counts": {"active": 13, "manual_only": 13},
+                "units": [
+                    {
+                        "repository": "public-app",
+                        "repository_visibility": "public",
+                        "alert_class": "dependabot",
+                        "outcome": "merged",
+                        "pull_request_url": "https://github.com/nickzren/public-app/pull/8",
+                        "pull_request_title": "fix leaked token abc123 from private path",
+                    },
+                    {
+                        "repository": "public-cli",
+                        "repository_visibility": "public",
+                        "alert_class": "code_scanning",
+                        "outcome": "blocked",
+                        "reason": "token-like raw alert detail from scanner",
+                    },
+                ],
+            }
+        )
+
+        self.assertIn(
+            "- public-app: [Dependabot remediation PR](https://github.com/nickzren/public-app/pull/8)",
+            report,
+        )
+        self.assertIn("- public-cli: code scanning 1 (blocked)", report)
+        self.assertNotIn("leaked token", report)
+        self.assertNotIn("abc123", report)
+        self.assertNotIn("raw alert detail", report)
 
 
 if __name__ == "__main__":

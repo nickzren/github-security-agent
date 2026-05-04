@@ -14,6 +14,36 @@ from urllib.parse import urlparse
 
 DEFAULT_HEADING = "Weekly Security Report"
 
+SAFE_REASON_CODES = {
+    "superseded",
+    "advisory_withdrawn",
+    "dependency_removed",
+    "unsupported_alert_class",
+    "unsupported_ecosystem",
+    "verification_unavailable",
+    "verification_failed",
+    "checks_pending",
+    "checks_red",
+    "branch_protection_block",
+    "manifest_change_required",
+    "no_patch_available",
+    "clone_missing",
+    "rate_limited",
+    "env_mismatch",
+    "auth_insufficient",
+    "registry_auth_missing",
+    "lock_contended",
+    "policy_blocked",
+    "unsupported_rule",
+    "code_scanning_disabled",
+    "secret_scanning_disabled",
+    "no_analysis_found",
+    "history_rewrite_required",
+    "manual_only",
+    "manual_only_repository",
+    "report_only",
+}
+
 
 @dataclass(frozen=True)
 class SecurityOverview:
@@ -227,7 +257,7 @@ def _patched_by_automation_lines(summary: dict[str, Any], units: list[dict[str, 
     private_count = 0
 
     for unit in units:
-        if str(unit.get("outcome", "")).lower() != "opened_pr":
+        if str(unit.get("outcome", "")).lower() not in {"opened_pr", "merged"}:
             continue
         if _is_explicit_public(unit):
             public_lines.append(_public_pr_line(unit, owner))
@@ -240,7 +270,9 @@ def _patched_by_automation_lines(summary: dict[str, Any], units: list[dict[str, 
     lines = ["Patched by automation:"]
     lines.extend(public_lines)
     if private_count:
-        lines.append(f"- Private or undisclosed repos: {private_count} {_plural(private_count, 'PR')} opened or updated")
+        lines.append(
+            f"- Private or undisclosed repos: {private_count} {_plural(private_count, 'PR')} created, updated, or merged"
+        )
     return lines
 
 
@@ -293,13 +325,16 @@ def _is_blocked_or_manual(unit: dict[str, Any]) -> bool:
 
 
 def _manual_reason(unit: dict[str, Any]) -> str:
-    reason = str(unit.get("reason_code") or unit.get("reason") or "").strip()
-    if reason:
-        return reason
+    reason_code = str(unit.get("reason_code") or "").strip()
+    if reason_code:
+        return reason_code if reason_code in SAFE_REASON_CODES else "manual_follow_up"
     follow_up = unit.get("manual_follow_up_actions") or unit.get("manual_actions") or []
     if follow_up:
         return "manual_follow_up"
-    return str(unit.get("outcome") or "review_required").lower()
+    outcome = str(unit.get("outcome") or "").lower()
+    if outcome in {"blocked", "failed"}:
+        return outcome
+    return "review_required"
 
 
 def _alert_class(unit: dict[str, Any]) -> str:
@@ -361,18 +396,14 @@ def _public_pr_line(unit: dict[str, Any], owner: str) -> str:
 
 
 def _pr_label(unit: dict[str, Any]) -> str:
-    if _alert_class(unit) == "secret_scanning":
+    alert_class = _alert_class(unit)
+    if alert_class == "dependabot":
+        return "Dependabot remediation PR"
+    if alert_class == "code_scanning":
+        return "Code scanning remediation PR"
+    if alert_class == "secret_scanning":
         return "Secret scanning cleanup PR"
-    for key in ("pull_request_title", "pr_title", "title"):
-        value = unit.get(key)
-        if isinstance(value, str) and value.strip():
-            return _single_line(value)
-    pull_request = unit.get("pull_request")
-    if isinstance(pull_request, dict):
-        value = pull_request.get("title")
-        if isinstance(value, str) and value.strip():
-            return _single_line(value)
-    return "PR opened or updated"
+    return "Security remediation PR"
 
 
 def _safe_pr_url(unit: dict[str, Any], owner: str, repo: str) -> str:
@@ -403,10 +434,6 @@ def _is_allowed_pr_url(url: str, owner: str, repo: str) -> bool:
         and parts[2] == "pull"
         and parts[3].isdigit()
     )
-
-
-def _single_line(value: str) -> str:
-    return " ".join(value.replace("[", "").replace("]", "").split())
 
 
 def _plural(count: int, noun: str) -> str:

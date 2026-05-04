@@ -39,7 +39,7 @@ except ModuleNotFoundError:  # pragma: no cover - used when running from scripts
 HEADING = "Weekly Security Report"
 WORKFLOW = "publish-weekly-report.yml"
 STALE_AFTER_DAYS = 9
-ALLOWED_PUBLISH_MUTATION_MODES = {"report_only", "pull_request"}
+ALLOWED_PUBLISH_MUTATION_MODES = {"report_only", "pull_request", "auto_merge"}
 
 
 @dataclass(frozen=True)

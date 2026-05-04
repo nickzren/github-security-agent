@@ -24,8 +24,9 @@ Each repository entry must declare one automation mode:
 
 - `report_only`: read alerts and write local or public reports only; no branch creation, no pull request creation or update, no pushes, and no merges
 - `pull_request`: commit verified fixes to dedicated remediation branches, push them, and create or update pull requests for `active` repositories after verification allows it; no direct default-branch pushes and no auto-merge
+- `auto_merge`: do everything allowed by `pull_request`, then merge only eligible Dependabot fixes and allowlisted deterministic code-scanning fixes after local verification passes, required GitHub checks are green, and branch protection allows the merge
 
-`manual_only` repository entries remain read/report-only under every mutation mode. Auto-merge requires a future explicit mutation mode; `pull_request` is not enough.
+`manual_only` repository entries remain read/report-only under every mutation mode. Secret-scanning cleanup PRs are never auto-merged by this scaffold. `pull_request` is not enough for auto-merge.
 
 A real verification command must:
 

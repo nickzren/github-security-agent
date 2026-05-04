@@ -118,6 +118,32 @@ class WeeklyReportDispatcherTests(unittest.TestCase):
             body = decode_body(request.issue_body_gz_b64)
             self.assertIn("Dependabot: 0 merged, 1 PR, 0 blocked", body)
 
+    def test_accepts_auto_merge_mutation_mode_for_publish_after_autofix(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            profile = write_profile(tmp, mutation_mode="auto_merge")
+            latest = Path(tmp) / "latest.json"
+            latest.write_text(
+                json.dumps(
+                    {
+                        "generated_at": "2026-05-01T13:00:00Z",
+                        "repo_counts": {"active": 13, "manual_only": 13},
+                        "units": [{"alert_class": "dependabot", "outcome": "merged"}],
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            request = prepare_dispatch(
+                profile_path=profile,
+                latest_json=latest,
+                publish_repo="acme/github-security-agent",
+                issue_repo="acme/github-security-agent",
+                now=datetime(2026, 5, 1, 14, 0, tzinfo=timezone.utc),
+            )
+
+            body = decode_body(request.issue_body_gz_b64)
+            self.assertIn("Dependabot: 1 merged, 0 PR, 0 blocked", body)
+
     def test_stale_latest_json_publishes_stale_report_body(self):
         with tempfile.TemporaryDirectory() as tmp:
             profile = write_profile(tmp)

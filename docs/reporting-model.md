@@ -56,4 +56,4 @@ Every run should produce exactly one summary per remediation unit, reflecting th
 - public weekly issue output may include repository names and PR links only for remediation units explicitly marked public
 - private or unknown-visibility repositories must be collapsed into aggregate counts only
 - public weekly issue output must never include private repository names, secret types, alert numbers, raw alert payloads, or token-like strings
-- weekly issue rendering should use `Patched by automation` for PRs created or updated by the run and `Manual review required` for items that need human attention
+- weekly issue rendering should use `Patched by automation` for PRs created, updated, or merged by the run and `Manual review required` for items that need human attention
