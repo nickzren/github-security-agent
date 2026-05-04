@@ -25,17 +25,18 @@ This skill does not patch repositories. It summarizes what happened.
 2. Record one outcome for each remediation unit.
 3. Record whether the PR was adopted from native Dependabot or opened by the agent.
 4. Record PR links where applicable.
-5. Record the rule id for every `code_scanning` remediation unit.
-6. Record the alert number and secret type for every `secret_scanning` remediation unit.
-7. Record the incident triage state for every `secret_scanning` remediation unit.
-8. Record any manual follow-up actions for every `secret_scanning` remediation unit.
-9. Record any relevant `platform_constraints` when they explain why a target is `manual_only`, review-required, or blocked by environment/runtime assumptions.
-10. Record a reason code for every `blocked`, `skipped`, and `failed` outcome.
-11. Separate unsupported scope from execution failure.
-12. Distinguish remediation-pass results from merge-pass results.
-13. Record any concurrency lock recovery events for the run.
-14. Write the JSON Lines run report under `{clone_root}/.github-security-agent/runs/{profile_id}/{iso8601_utc}.jsonl` and overwrite the companion `latest.json` summary.
-15. Summarize the remaining open-alert posture in operational terms, including code-scanning coverage gaps, secret-scanning follow-up actions, and surfaced platform constraints when they explain operator action.
+5. Record repository visibility when it is known, so public issue rendering can list only explicit public repositories and collapse private or unknown repositories into counts.
+6. Record the rule id for every `code_scanning` remediation unit.
+7. Record the alert number and secret type for every `secret_scanning` remediation unit.
+8. Record the incident triage state for every `secret_scanning` remediation unit.
+9. Record any manual follow-up actions for every `secret_scanning` remediation unit.
+10. Record any relevant `platform_constraints` when they explain why a target is `manual_only`, review-required, or blocked by environment/runtime assumptions.
+11. Record a reason code for every `blocked`, `skipped`, and `failed` outcome.
+12. Separate unsupported scope from execution failure.
+13. Distinguish remediation-pass results from merge-pass results.
+14. Record any concurrency lock recovery events for the run.
+15. Write the JSON Lines run report under `{clone_root}/.github-security-agent/runs/{profile_id}/{iso8601_utc}.jsonl` and overwrite the companion `latest.json` summary.
+16. Summarize the remaining open-alert posture in operational terms, including code-scanning coverage gaps, secret-scanning follow-up actions, and surfaced platform constraints when they explain operator action.
 
 ## Execution Rules
 

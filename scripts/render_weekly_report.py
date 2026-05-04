@@ -9,6 +9,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 
 DEFAULT_HEADING = "Weekly Security Report"
@@ -81,8 +82,13 @@ def render_weekly_report(
     ]
     _append_security_overview(lines, overview)
 
+    patched_lines = _patched_by_automation_lines(summary, units)
+    if patched_lines:
+        lines.extend(patched_lines)
+        lines.append("")
+
     if manual_by_class:
-        lines.append("Manual attention:")
+        lines.append("Manual review required:")
         for alert_class in ("dependabot", "code_scanning", "secret_scanning"):
             count = manual_by_class.get(alert_class, 0)
             if count:
@@ -90,6 +96,7 @@ def render_weekly_report(
         for alert_class, count in sorted(manual_by_class.items()):
             if alert_class not in {"dependabot", "code_scanning", "secret_scanning"}:
                 lines.append(f"- {_class_label(alert_class)}: {count}")
+        lines.extend(_manual_review_detail_lines(units))
         lines.append("")
     else:
         lines.append(f"manual repos: {manual_count} checked, no current reportable alerts")
@@ -115,7 +122,7 @@ def render_no_completed_run(
     _append_blank(lines)
     lines.extend(
         [
-            "Manual attention:",
+            "Action needed:",
             "- Review automation runner: remediation report latest.json is missing.",
             "",
             "Notes:",
@@ -139,7 +146,7 @@ def render_stale_report(
     _append_blank(lines)
     lines.extend(
         [
-            "Manual attention:",
+            "Action needed:",
             f"- Review automation runner: latest report is stale. Last completed run: {completed_at}",
             "",
             "Notes:",
@@ -214,6 +221,66 @@ def _manual_actions_by_class(units: list[dict[str, Any]]) -> Counter[str]:
     return by_class
 
 
+def _patched_by_automation_lines(summary: dict[str, Any], units: list[dict[str, Any]]) -> list[str]:
+    owner = _summary_owner(summary)
+    public_lines: list[str] = []
+    private_count = 0
+
+    for unit in units:
+        if str(unit.get("outcome", "")).lower() != "opened_pr":
+            continue
+        if _is_explicit_public(unit):
+            public_lines.append(_public_pr_line(unit, owner))
+        else:
+            private_count += 1
+
+    if not public_lines and private_count == 0:
+        return []
+
+    lines = ["Patched by automation:"]
+    lines.extend(public_lines)
+    if private_count:
+        lines.append(f"- Private or undisclosed repos: {private_count} {_plural(private_count, 'PR')} opened or updated")
+    return lines
+
+
+def _manual_review_detail_lines(units: list[dict[str, Any]]) -> list[str]:
+    public_by_repo: dict[str, Counter[str]] = {}
+    reasons_by_repo: dict[str, set[str]] = {}
+    private_count = 0
+
+    for unit in units:
+        if not _is_blocked_or_manual(unit):
+            continue
+        if not _is_explicit_public(unit):
+            private_count += 1
+            continue
+        repo = _repo_name(unit)
+        public_by_repo.setdefault(repo, Counter())[_alert_class(unit)] += 1
+        reasons_by_repo.setdefault(repo, set()).add(_manual_reason(unit))
+
+    lines: list[str] = []
+    for repo in sorted(public_by_repo):
+        class_counts = public_by_repo[repo]
+        parts = []
+        for alert_class in ("dependabot", "code_scanning", "secret_scanning"):
+            count = class_counts.get(alert_class, 0)
+            if count:
+                parts.append(f"{_class_label(alert_class)} {count}")
+        for alert_class, count in sorted(class_counts.items()):
+            if alert_class not in {"dependabot", "code_scanning", "secret_scanning"}:
+                parts.append(f"{_class_label(alert_class)} {count}")
+        reasons = ", ".join(sorted(reason for reason in reasons_by_repo.get(repo, set()) if reason))
+        suffix = f" ({reasons})" if reasons else ""
+        lines.append(f"- {repo}: {', '.join(parts)}{suffix}")
+
+    if private_count:
+        lines.append(
+            f"- Private or undisclosed repos: {private_count} {_plural(private_count, 'manual-review item')}"
+        )
+    return lines
+
+
 def _is_blocked_or_manual(unit: dict[str, Any]) -> bool:
     outcome = str(unit.get("outcome", "")).lower()
     repository_mode = str(unit.get("repository_mode", "")).lower()
@@ -225,9 +292,129 @@ def _is_blocked_or_manual(unit: dict[str, Any]) -> bool:
     )
 
 
+def _manual_reason(unit: dict[str, Any]) -> str:
+    reason = str(unit.get("reason_code") or unit.get("reason") or "").strip()
+    if reason:
+        return reason
+    follow_up = unit.get("manual_follow_up_actions") or unit.get("manual_actions") or []
+    if follow_up:
+        return "manual_follow_up"
+    return str(unit.get("outcome") or "review_required").lower()
+
+
 def _alert_class(unit: dict[str, Any]) -> str:
     raw = str(unit.get("alert_class") or unit.get("class") or "").lower()
     return raw.replace("-", "_").replace(" ", "_")
+
+
+def _repo_name(unit: dict[str, Any]) -> str:
+    for key in ("repository", "repo", "repository_name"):
+        value = unit.get(key)
+        if isinstance(value, str) and value:
+            return value.split("/")[-1]
+        if isinstance(value, dict):
+            nested = value.get("name") or value.get("full_name")
+            if isinstance(nested, str) and nested:
+                return nested.split("/")[-1]
+    return "unknown"
+
+
+def _summary_owner(summary: dict[str, Any]) -> str:
+    owner = summary.get("owner")
+    if isinstance(owner, str) and owner:
+        return owner.lower()
+    profile = summary.get("profile")
+    if isinstance(profile, dict):
+        owner = profile.get("owner")
+        if isinstance(owner, str) and owner:
+            return owner.lower()
+    return ""
+
+
+def _is_explicit_public(unit: dict[str, Any]) -> bool:
+    for key in ("repository_visibility", "visibility", "repo_visibility"):
+        value = unit.get(key)
+        if isinstance(value, str):
+            return value.lower() == "public"
+    repository = unit.get("repository")
+    if isinstance(repository, dict):
+        visibility = repository.get("visibility")
+        if isinstance(visibility, str):
+            return visibility.lower() == "public"
+        private = repository.get("private")
+        if isinstance(private, bool):
+            return not private
+    for key in ("repository_private", "private", "is_private"):
+        value = unit.get(key)
+        if isinstance(value, bool):
+            return not value
+    return False
+
+
+def _public_pr_line(unit: dict[str, Any], owner: str) -> str:
+    repo = _repo_name(unit)
+    label = _pr_label(unit)
+    url = _safe_pr_url(unit, owner, repo)
+    if url:
+        return f"- {repo}: [{label}]({url})"
+    return f"- {repo}: {label}"
+
+
+def _pr_label(unit: dict[str, Any]) -> str:
+    if _alert_class(unit) == "secret_scanning":
+        return "Secret scanning cleanup PR"
+    for key in ("pull_request_title", "pr_title", "title"):
+        value = unit.get(key)
+        if isinstance(value, str) and value.strip():
+            return _single_line(value)
+    pull_request = unit.get("pull_request")
+    if isinstance(pull_request, dict):
+        value = pull_request.get("title")
+        if isinstance(value, str) and value.strip():
+            return _single_line(value)
+    return "PR opened or updated"
+
+
+def _safe_pr_url(unit: dict[str, Any], owner: str, repo: str) -> str:
+    if not owner or not repo:
+        return ""
+    for key in ("pull_request_url", "pr_url", "pull_request_link", "pr_link"):
+        value = unit.get(key)
+        if isinstance(value, str) and _is_allowed_pr_url(value, owner, repo):
+            return value
+    pull_request = unit.get("pull_request")
+    if isinstance(pull_request, dict):
+        for key in ("html_url", "url"):
+            value = pull_request.get(key)
+            if isinstance(value, str) and _is_allowed_pr_url(value, owner, repo):
+                return value
+    return ""
+
+
+def _is_allowed_pr_url(url: str, owner: str, repo: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or parsed.netloc.lower() != "github.com":
+        return False
+    parts = [part for part in parsed.path.split("/") if part]
+    return (
+        len(parts) >= 4
+        and parts[0].lower() == owner.lower()
+        and parts[1].lower() == repo.lower()
+        and parts[2] == "pull"
+        and parts[3].isdigit()
+    )
+
+
+def _single_line(value: str) -> str:
+    return " ".join(value.replace("[", "").replace("]", "").split())
+
+
+def _plural(count: int, noun: str) -> str:
+    if count == 1:
+        return noun
+    if noun == "PR":
+        return "PRs"
+    return f"{noun}s"
 
 
 def _class_label(alert_class: str) -> str:

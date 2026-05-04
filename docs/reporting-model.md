@@ -15,6 +15,7 @@ Every run should produce exactly one summary per remediation unit, reflecting th
 ## Required Summary Fields
 
 - repository name
+- repository visibility, when public issue output may include repository detail
 - base branch
 - `target_id`
 - remediation dedup key
@@ -34,7 +35,7 @@ Every run should produce exactly one summary per remediation unit, reflecting th
 ## Outcome Semantics
 
 - `merged`: remediation completed and was merged
-- `opened_pr`: remediation prepared and PR opened or updated
+- `opened_pr`: remediation committed to a remediation branch, pushed, and PR opened or updated
 - `blocked`: remediation is prepared or known, but policy or environment prevents completion
 - `skipped`: intentionally not processed
 - `failed`: execution error or unrecoverable tooling problem
@@ -52,4 +53,7 @@ Every run should produce exactly one summary per remediation unit, reflecting th
 - report remaining open `secret_scanning` alerts with their incident triage state and required manual follow-up actions, and explain whether they are awaiting cleanup PR review, blocked by policy, or disabled at the repository level
 - surface relevant `platform_constraints` for manual-only, review-required, or env-mismatch cases when they explain the operator action needed
 - if the weekly renderer uses a GitHub security overview fallback, include only sanitized aggregate open-alert counts by class and make clear they are dashboard counts, not remediation results
-- public weekly issue output must stay counts-only: no repository names, secret types, alert numbers, or raw alert payloads
+- public weekly issue output may include repository names and PR links only for remediation units explicitly marked public
+- private or unknown-visibility repositories must be collapsed into aggregate counts only
+- public weekly issue output must never include private repository names, secret types, alert numbers, raw alert payloads, or token-like strings
+- weekly issue rendering should use `Patched by automation` for PRs created or updated by the run and `Manual review required` for items that need human attention

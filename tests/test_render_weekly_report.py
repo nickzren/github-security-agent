@@ -25,7 +25,7 @@ class WeeklyReportRendererTests(unittest.TestCase):
         self.assertIn("Dependabot: 1 merged, 1 PR, 1 blocked", report)
         self.assertIn("Code scanning: 1 fixed, 0 PR, 1 manual", report)
         self.assertIn("Secret scanning: 1 cleanup PR, 1 manual", report)
-        self.assertIn("Manual attention:", report)
+        self.assertIn("Manual review required:", report)
         self.assertIn("- Dependabot: 1", report)
         self.assertIn("- code scanning: 1", report)
         self.assertIn("- secret scanning: 1", report)
@@ -89,8 +89,81 @@ class WeeklyReportRendererTests(unittest.TestCase):
     def test_collapses_empty_manual_section(self):
         report = render_weekly_report(load_fixture("latest_no_manual.json"))
 
-        self.assertNotIn("Manual attention:\n-", report)
+        self.assertNotIn("Manual review required:\n-", report)
         self.assertIn("manual repos: 13 checked, no current reportable alerts", report)
+
+    def test_lists_only_explicit_public_repo_details(self):
+        report = render_weekly_report(
+            {
+                "owner": "nickzren",
+                "repo_counts": {"active": 13, "manual_only": 13},
+                "units": [
+                    {
+                        "repository": "public-app",
+                        "repository_visibility": "public",
+                        "alert_class": "dependabot",
+                        "outcome": "opened_pr",
+                        "pull_request_url": "https://github.com/nickzren/public-app/pull/2",
+                        "pull_request_title": "chore(deps): remediate root security alerts",
+                    },
+                    {
+                        "repository": "public-web",
+                        "repository_visibility": "public",
+                        "alert_class": "secret_scanning",
+                        "outcome": "opened_pr",
+                        "pull_request_url": "https://github.com/nickzren/public-web/pull/3",
+                        "pull_request_title": "fix(secret-scanning): remove token from root",
+                        "secret_type": "example_service_token",
+                    },
+                    {
+                        "repository": "private-app",
+                        "repository_visibility": "private",
+                        "alert_class": "dependabot",
+                        "outcome": "opened_pr",
+                        "pull_request_url": "https://github.com/nickzren/private-app/pull/4",
+                        "pull_request_title": "private dependency fix",
+                    },
+                    {
+                        "repository": "unknown-app",
+                        "alert_class": "code_scanning",
+                        "outcome": "opened_pr",
+                        "pull_request_url": "https://github.com/nickzren/unknown-app/pull/5",
+                        "pull_request_title": "unknown visibility fix",
+                    },
+                    {
+                        "repository": "public-cli",
+                        "repository_visibility": "public",
+                        "alert_class": "code_scanning",
+                        "outcome": "skipped",
+                        "reason_code": "unsupported_rule",
+                        "manual_follow_up_actions": ["manual code scanning review"],
+                    },
+                    {
+                        "repository": "private-config",
+                        "repository_visibility": "private",
+                        "alert_class": "dependabot",
+                        "outcome": "blocked",
+                        "reason_code": "verification_unavailable",
+                    },
+                ],
+            }
+        )
+
+        self.assertIn("Patched by automation:", report)
+        self.assertIn(
+            "- public-app: [chore(deps): remediate root security alerts](https://github.com/nickzren/public-app/pull/2)",
+            report,
+        )
+        self.assertIn("- public-web: [Secret scanning cleanup PR](https://github.com/nickzren/public-web/pull/3)", report)
+        self.assertIn("- Private or undisclosed repos: 2 PRs opened or updated", report)
+        self.assertIn("Manual review required:", report)
+        self.assertIn("- public-cli: code scanning 1 (unsupported_rule)", report)
+        self.assertIn("- Private or undisclosed repos: 1 manual-review item", report)
+        self.assertNotIn("private-app", report)
+        self.assertNotIn("unknown-app", report)
+        self.assertNotIn("private-config", report)
+        self.assertNotIn("example_service_token", report)
+        self.assertNotIn("remove token", report)
 
 
 if __name__ == "__main__":

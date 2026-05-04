@@ -23,7 +23,7 @@ Each repository entry must declare one automation mode:
 ## Mutation Modes
 
 - `report_only`: read alerts and write local or public reports only; no branch creation, no pull request creation or update, no pushes, and no merges
-- `pull_request`: create or update remediation branches and pull requests for `active` repositories after verification allows it; no direct default-branch pushes and no auto-merge
+- `pull_request`: commit verified fixes to dedicated remediation branches, push them, and create or update pull requests for `active` repositories after verification allows it; no direct default-branch pushes and no auto-merge
 
 `manual_only` repository entries remain read/report-only under every mutation mode. Auto-merge requires a future explicit mutation mode; `pull_request` is not enough.
 
@@ -92,7 +92,7 @@ For `Dependabot`, the scaffold uses `adopt-first` behavior.
 Every processed remediation unit should end in exactly one outcome:
 
 - `merged`: remediation completed and merged
-- `opened_pr`: remediation prepared and pull request opened or updated
+- `opened_pr`: remediation was committed to a remediation branch, pushed, and represented by an opened or updated pull request
 - `blocked`: remediation exists or was attempted but cannot proceed under current policy or environment
 - `skipped`: intentionally not processed because of policy or unsupported scope
 - `failed`: execution error or unrecoverable tooling failure
