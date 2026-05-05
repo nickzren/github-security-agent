@@ -71,9 +71,11 @@ class ReportOnlyRunnerTests(unittest.TestCase):
             active_dependabot = find_unit(summary, "example-api", "dependabot")
             self.assertEqual(active_dependabot["outcome"], "blocked")
             self.assertEqual(active_dependabot["reason_code"], "report_only")
+            self.assertEqual(active_dependabot["repository_visibility"], "public")
 
             manual_dependabot = find_unit(summary, "example-cli", "dependabot")
             self.assertEqual(manual_dependabot["repository_mode"], "manual_only")
+            self.assertEqual(manual_dependabot["repository_visibility"], "private")
             self.assertEqual(manual_dependabot["outcome"], "skipped")
 
     def test_requires_report_only_mode(self):
@@ -82,6 +84,42 @@ class ReportOnlyRunnerTests(unittest.TestCase):
 
             with self.assertRaisesRegex(ValueError, "mutation_mode must be report_only"):
                 load_profile_contract(profile_path)
+
+    def test_loads_standard_yaml_list_indentation_without_pyyaml(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            profile = Path(tmp) / "profile.yaml"
+            profile.write_text(
+                "\n".join(
+                    [
+                        "profile:",
+                        "  profile_id: acme-local",
+                        "  owner: acme",
+                        "  runtime:",
+                        f"    local_clone_root: {tmp}",
+                        "  defaults:",
+                        "    automation_mode: active",
+                        "    mutation_mode: report_only",
+                        "repositories:",
+                        "- repo: example-api",
+                        "  repository_visibility: public",
+                        "  automation_mode: active",
+                        "  targets:",
+                        "  - target_id: root",
+                        "    alert_classes:",
+                        "    - dependabot",
+                        "    - code_scanning",
+                        "",
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            loaded = load_profile_contract(profile)
+
+            self.assertEqual(len(loaded.repositories), 1)
+            self.assertEqual(loaded.repositories[0].repo, "example-api")
+            self.assertEqual(loaded.repositories[0].alert_classes, ("dependabot", "code_scanning"))
+            self.assertEqual(loaded.repositories[0].visibility, "public")
 
     def test_writes_latest_json_and_jsonl_artifacts(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -127,6 +165,7 @@ def write_profile(tmp, mutation_mode="report_only"):
                 "",
                 "repositories:",
                 "  - repo: example-api",
+                "    repository_visibility: public",
                 "    automation_mode: active",
                 "    targets:",
                 "      - target_id: root",
@@ -135,6 +174,7 @@ def write_profile(tmp, mutation_mode="report_only"):
                 "          - code_scanning",
                 "          - secret_scanning",
                 "  - repo: example-cli",
+                "    repository_visibility: private",
                 "    automation_mode: manual_only",
                 "    targets:",
                 "      - target_id: root",

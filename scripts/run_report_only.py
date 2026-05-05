@@ -27,6 +27,7 @@ class RepositoryContract:
     repo: str
     automation_mode: str
     alert_classes: tuple[str, ...]
+    visibility: str = ""
 
 
 @dataclass(frozen=True)
@@ -73,6 +74,7 @@ def load_profile_contract(path: str | Path) -> ProfileContract:
                 repo=str(repo),
                 automation_mode=mode,
                 alert_classes=_repo_alert_classes(entry),
+                visibility=str(entry.get("repository_visibility") or entry.get("visibility") or ""),
             )
         )
 
@@ -205,6 +207,7 @@ def _unit_for_alert(
         "owner": owner,
         "repo": repo.repo,
         "repository_mode": repo.automation_mode,
+        "repository_visibility": repo.visibility,
         "target_id": "repository",
         "alert_class": alert_class,
         "remediation_key": _remediation_key(owner, repo.repo, alert_class, alert_number),
@@ -234,6 +237,8 @@ def _parse_profile_yaml_subset(text: str) -> dict[str, Any]:
     subsection: str | None = None
     current_repo: dict[str, Any] | None = None
     current_target: dict[str, Any] | None = None
+    current_repo_indent: int | None = None
+    current_target_indent: int | None = None
     collecting_alert_classes = False
 
     for raw_line in text.splitlines():
@@ -243,12 +248,16 @@ def _parse_profile_yaml_subset(text: str) -> dict[str, Any]:
         indent = len(raw_line) - len(raw_line.lstrip(" "))
         stripped = line.strip()
 
-        if indent == 0:
+        if indent == 0 and not (section == "repositories" and stripped.startswith("- repo:")):
             section = stripped[:-1] if stripped.endswith(":") else None
             subsection = None
             current_repo = None
             current_target = None
+            current_repo_indent = None
+            current_target_indent = None
             collecting_alert_classes = False
+            if stripped.startswith("- repo:"):
+                section = "repositories"
             continue
 
         if section == "profile":
@@ -268,22 +277,36 @@ def _parse_profile_yaml_subset(text: str) -> dict[str, Any]:
                 continue
 
         if section == "repositories":
-            if indent == 2 and stripped.startswith("- repo:"):
+            if stripped.startswith("- repo:"):
                 _, value = _split_yaml_pair(stripped[2:].strip())
                 current_repo = {"repo": _yaml_scalar(value), "targets": []}
                 data["repositories"].append(current_repo)
                 current_target = None
+                current_repo_indent = indent
+                current_target_indent = None
                 collecting_alert_classes = False
                 continue
             if current_repo is None:
                 continue
-            if indent == 4 and stripped.startswith("automation_mode:"):
+            repo_field_indent = (current_repo_indent or 0) + 2
+            if indent == repo_field_indent and (
+                stripped.startswith("repository_visibility:") or stripped.startswith("visibility:")
+            ):
+                key, value = _split_yaml_pair(stripped)
+                current_repo[key] = _yaml_scalar(value)
+                continue
+            if indent == repo_field_indent and stripped.startswith("automation_mode:"):
                 _, value = _split_yaml_pair(stripped)
                 current_repo["automation_mode"] = _yaml_scalar(value)
                 continue
-            if indent == 6 and stripped.startswith("- "):
+            if (
+                indent in {repo_field_indent, repo_field_indent + 2}
+                and stripped.startswith("- ")
+                and ":" in stripped[2:]
+            ):
                 current_target = {}
                 current_repo.setdefault("targets", []).append(current_target)
+                current_target_indent = indent
                 collecting_alert_classes = False
                 inline = stripped[2:].strip()
                 if ":" in inline:
@@ -292,14 +315,15 @@ def _parse_profile_yaml_subset(text: str) -> dict[str, Any]:
                 continue
             if current_target is None:
                 continue
-            if indent == 8 and stripped.startswith("alert_classes:"):
+            target_field_indent = (current_target_indent or 0) + 2
+            if indent == target_field_indent and stripped.startswith("alert_classes:"):
                 current_target["alert_classes"] = []
                 collecting_alert_classes = True
                 continue
-            if collecting_alert_classes and indent == 10 and stripped.startswith("- "):
+            if collecting_alert_classes and indent >= target_field_indent and stripped.startswith("- "):
                 current_target.setdefault("alert_classes", []).append(_yaml_scalar(stripped[2:]))
                 continue
-            if indent <= 8:
+            if indent <= target_field_indent:
                 collecting_alert_classes = False
 
     return data
