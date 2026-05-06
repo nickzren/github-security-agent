@@ -38,7 +38,11 @@ If npm is available:
 npx skills add nickzren/github-security-agent --skill github-security-agent -y -g
 
 Otherwise:
-gh repo clone nickzren/github-security-agent /tmp/github-security-agent && /tmp/github-security-agent/install.sh
+dir="${XDG_DATA_HOME:-$HOME/.local/share}/agent-skills"
+repo="$dir/github-security-agent"
+mkdir -p "$dir"
+test -d "$repo" || gh repo clone nickzren/github-security-agent "$repo"
+"$repo/install.sh"
 ```
 
 Manual install from this checkout:
