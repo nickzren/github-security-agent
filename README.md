@@ -27,6 +27,26 @@ The scaffold never rotates credentials, dismisses alerts, rewrites git history, 
 5. Authenticate `gh` with a PAT or fine-grained token that has the required capabilities (see [docs/runtime-contract.md](docs/runtime-contract.md)).
 6. Invoke the root [SKILL.md](SKILL.md) with your selected profile.
 
+## Install Agent Skill
+
+Copy this into a new Codex or Claude Code session:
+
+```text
+Set up github-security-agent, the profile-driven GitHub security remediation skill for agents.
+
+If npm is available:
+npx skills add nickzren/github-security-agent --skill github-security-agent -y -g
+
+Otherwise:
+gh repo clone nickzren/github-security-agent /tmp/github-security-agent && /tmp/github-security-agent/install.sh
+```
+
+Manual install from this checkout:
+
+```bash
+./install.sh
+```
+
 ## Operating Model
 
 The framework is organized around a `profile` that describes one GitHub owner. Each profile contains `repository entry` definitions, each with stable `target_id` values for remediation targets (e.g. `root`, `ui`, `api-server`).
