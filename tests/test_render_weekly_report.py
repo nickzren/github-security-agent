@@ -22,7 +22,13 @@ class WeeklyReportRendererTests(unittest.TestCase):
         report = render_weekly_report(load_fixture("latest_personal.json"))
 
         self.assertIn("## Weekly Security Report", report)
-        self.assertIn("Dependabot: 1 merged, 1 PR, 1 blocked", report)
+        self.assertIn("Run summary:", report)
+        self.assertIn("- Initial alerts: 6 (Dependabot 3, code scanning 2, secret scanning 1)", report)
+        self.assertIn("- Patched by automation: 4 alerts across 4 PRs", report)
+        self.assertIn("- Auto-merged: 2 alerts across 2 PRs", report)
+        self.assertIn("- Manual review required: 3 alerts across 3 items", report)
+        self.assertIn("By alert class:", report)
+        self.assertIn("Dependabot: 1 merged, 1 PR, 1 manual review", report)
         self.assertIn("Code scanning: 1 fixed, 0 PR, 1 manual", report)
         self.assertIn("Secret scanning: 1 cleanup PR, 1 manual", report)
         self.assertIn("Manual review required:", report)
@@ -41,11 +47,10 @@ class WeeklyReportRendererTests(unittest.TestCase):
             security_overview=load_security_overview_json(FIXTURE_DIR / "security_overview.json"),
         )
 
-        self.assertIn("GitHub open alerts:", report)
-        self.assertIn("- Dependabot: 3", report)
-        self.assertIn("- Code scanning: 2", report)
-        self.assertIn("- Secret scanning: 1", report)
-        self.assertIn("- Total: 6", report)
+        self.assertIn(
+            "- Current GitHub open alerts: 6 (Dependabot 3, code scanning 2, secret scanning 1)",
+            report,
+        )
         self.assertNotIn("example-app", report)
         self.assertNotIn("secret_type", report)
         self.assertNotIn("alert_number", report)

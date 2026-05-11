@@ -116,7 +116,8 @@ class WeeklyReportDispatcherTests(unittest.TestCase):
             )
 
             body = decode_body(request.issue_body_gz_b64)
-            self.assertIn("Dependabot: 0 merged, 1 PR, 0 blocked", body)
+            self.assertIn("Run summary:", body)
+            self.assertIn("Dependabot: 0 merged, 1 PR, 0 manual review", body)
 
     def test_accepts_auto_merge_mutation_mode_for_publish_after_autofix(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -142,7 +143,8 @@ class WeeklyReportDispatcherTests(unittest.TestCase):
             )
 
             body = decode_body(request.issue_body_gz_b64)
-            self.assertIn("Dependabot: 1 merged, 0 PR, 0 blocked", body)
+            self.assertIn("Run summary:", body)
+            self.assertIn("Dependabot: 1 merged, 0 PR, 0 manual review", body)
 
     def test_stale_latest_json_publishes_stale_report_body(self):
         with tempfile.TemporaryDirectory() as tmp:

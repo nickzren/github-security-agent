@@ -91,11 +91,21 @@ def render_weekly_report(
     lines = [
         f"## {heading}",
         "",
+    ]
+    lines.extend(_run_summary_lines(summary, units, overview))
+    lines.extend(
+        [
+            "",
+            "By alert class:",
+        ]
+    )
+    lines.extend(
+        [
         (
             "Dependabot: "
             f"{dependabot['merged']} merged, "
             f"{dependabot['opened_pr']} PR, "
-            f"{dependabot['blocked']} blocked"
+            f"{dependabot['blocked']} manual review"
         ),
         (
             "Code scanning: "
@@ -109,8 +119,8 @@ def render_weekly_report(
             f"{secret_scanning['manual']} manual"
         ),
         "",
-    ]
-    _append_security_overview(lines, overview)
+        ]
+    )
 
     patched_lines = _patched_by_automation_lines(summary, units)
     if patched_lines:
@@ -216,6 +226,122 @@ def _append_security_overview(lines: list[str], overview: SecurityOverview | Non
 def _append_blank(lines: list[str]) -> None:
     if lines and lines[-1] != "":
         lines.append("")
+
+
+def _run_summary_lines(
+    summary: dict[str, Any],
+    units: list[dict[str, Any]],
+    overview: SecurityOverview,
+) -> list[str]:
+    result_totals = summary.get("result_totals")
+    if not isinstance(result_totals, dict):
+        result_totals = {}
+
+    initial = _summary_counts(summary, "initial_open_alert_counts", "open_alert_counts")
+    if initial.total == 0:
+        initial = _unit_alert_counts(units)
+    current = overview
+
+    patched_alerts = _nested_int(result_totals, "patched_by_automation", "alerts")
+    if patched_alerts == 0:
+        patched_alerts = _sum_alerts(
+            units,
+            lambda unit: str(unit.get("outcome", "")).lower() in {"merged", "opened_pr"},
+        )
+    patched_prs = _nested_int(result_totals, "patched_by_automation", "units")
+    if patched_prs == 0:
+        patched_prs = sum(
+            1
+            for unit in units
+            if str(unit.get("outcome", "")).lower() in {"merged", "opened_pr"}
+        )
+
+    opened_or_updated_prs = _nested_int(result_totals, "opened_or_updated_prs", "total")
+    if opened_or_updated_prs == 0:
+        opened_or_updated_prs = patched_prs
+
+    merged_prs = _nested_int(result_totals, "merged_prs", "total")
+    if merged_prs == 0:
+        merged_prs = sum(1 for unit in units if str(unit.get("outcome", "")).lower() == "merged")
+    merged_alerts = _sum_alerts(
+        units,
+        lambda unit: str(unit.get("outcome", "")).lower() == "merged",
+    )
+
+    manual_alerts = _nested_int(result_totals, "remaining_manual_review", "alerts")
+    if manual_alerts == 0:
+        manual_alerts = _sum_alerts(units, _is_blocked_or_manual)
+    manual_units = _nested_int(result_totals, "remaining_manual_review", "units")
+    if manual_units == 0:
+        manual_units = sum(1 for unit in units if _is_blocked_or_manual(unit))
+
+    return [
+        "Run summary:",
+        f"- Initial alerts: {initial.total} ({_inline_counts(initial)})",
+        (
+            f"- Patched by automation: {patched_alerts} {_plural(patched_alerts, 'alert')} "
+            f"across {patched_prs} {_plural(patched_prs, 'PR')}"
+        ),
+        f"- PRs created or updated: {opened_or_updated_prs}",
+        (
+            f"- Auto-merged: {merged_alerts} {_plural(merged_alerts, 'alert')} "
+            f"across {merged_prs} {_plural(merged_prs, 'PR')}"
+        ),
+        (
+            f"- Manual review required: {manual_alerts} {_plural(manual_alerts, 'alert')} "
+            f"across {manual_units} {_plural(manual_units, 'item')}"
+        ),
+        f"- Current GitHub open alerts: {current.total} ({_inline_counts(current)})",
+    ]
+
+
+def _summary_counts(summary: dict[str, Any], *keys: str) -> SecurityOverview:
+    for key in keys:
+        value = summary.get(key)
+        if isinstance(value, dict):
+            return security_overview_from_summary(value)
+    return SecurityOverview()
+
+
+def _unit_alert_counts(units: list[dict[str, Any]]) -> SecurityOverview:
+    counts: Counter[str] = Counter()
+    for unit in units:
+        counts[_alert_class(unit)] += _alert_count(unit)
+    return SecurityOverview(
+        dependabot=counts["dependabot"],
+        code_scanning=counts["code_scanning"],
+        secret_scanning=counts["secret_scanning"],
+    )
+
+
+def _sum_alerts(units: list[dict[str, Any]], predicate: Any) -> int:
+    return sum(_alert_count(unit) for unit in units if predicate(unit))
+
+
+def _alert_count(unit: dict[str, Any]) -> int:
+    value = _int_value(unit.get("alert_count"))
+    if value:
+        return value
+    for key in ("advisory_ids", "alert_numbers"):
+        items = unit.get(key)
+        if isinstance(items, list) and items:
+            return len(items)
+    return 1
+
+
+def _nested_int(data: dict[str, Any], key: str, nested_key: str) -> int:
+    value = data.get(key)
+    if not isinstance(value, dict):
+        return 0
+    return _int_value(value.get(nested_key))
+
+
+def _inline_counts(counts: SecurityOverview) -> str:
+    return (
+        f"Dependabot {counts.dependabot}, "
+        f"code scanning {counts.code_scanning}, "
+        f"secret scanning {counts.secret_scanning}"
+    )
 
 
 def _iter_units(summary: dict[str, Any]) -> list[dict[str, Any]]:

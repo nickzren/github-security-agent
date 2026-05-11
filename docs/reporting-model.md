@@ -57,3 +57,4 @@ Every run should produce exactly one summary per remediation unit, reflecting th
 - private or unknown-visibility repositories must be collapsed into aggregate counts only
 - public weekly issue output must never include private repository names, secret types, alert numbers, raw alert payloads, or token-like strings
 - weekly issue rendering should use `Patched by automation` for PRs created, updated, or merged by the run and `Manual review required` for items that need human attention
+- weekly issue rendering should lead with a compact `Run summary` showing initial alert totals by class, patched-by-automation totals, PRs created or updated, auto-merged totals, remaining manual-review totals, and current GitHub open-alert totals
