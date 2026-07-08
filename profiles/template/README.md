@@ -13,14 +13,24 @@ Use this directory as the source of truth for profile field names and vocabulary
 ## Rules
 
 - every repository entry must declare an automation mode
+- every profile must declare a defaults-level mutation mode
 - every supported target must declare a stable `target_id`
 - every active target must declare at least one real verification command; for dependency remediation this should exercise the dependency graph, and for metadata-only or secret-cleanup workflows it should provide relevant repository validation
 - the runtime contract belongs to the profile, not to ad hoc agent state
-- the profile-level `defaults.mutation_mode` field is the reviewable gate for unattended mutation
 - branch naming and PR metadata should support the remediation dedup key
 - optional static labels may be used for categorization, but they are not part of the remediation dedup contract
 
 The remediation dedup key is constructed by combining `profile.owner` with each repository entry's `repo` field, then adding alert class, base branch, and `target_id`. For `code_scanning`, the dedup key also includes the normalized rule id or rule family. For `secret_scanning`, the dedup key also includes the GitHub alert number.
+
+`defaults.mutation_mode` is the profile-wide run gate. Supported values are:
+
+- `report_only`: discovery, classification, and reporting only; no branch, PR, push, or merge mutation
+- `pull_request`: verified fixes may be committed to dedicated remediation branches, pushed, and opened or updated as pull requests when repository policy also allows
+- `auto_merge`: automatic merge is allowed only when repository policy and the review gate also allow
+
+`defaults.mutation_mode` and per-repository `automation_mode` are orthogonal. `mutation_mode` controls what the run may do globally; `automation_mode` controls whether a repository is eligible. Both must allow mutation before the agent may create branches, create or update pull requests, push commits, or merge.
+
+`defaults.protected_manual_repositories` names the repositories that should be described as manual repos in weekly operator output. Other `manual_only` repositories are verification-onboarding gaps unless they have current manual-actionable alerts.
 
 ## Profile-Level Sections
 

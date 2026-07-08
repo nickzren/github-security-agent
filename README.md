@@ -69,6 +69,7 @@ Public contracts live in `docs/`:
 - [docs/secret-scanning-policy.md](docs/secret-scanning-policy.md) — deterministic cleanup contract, response buckets, PR rules
 - [docs/review-gate.md](docs/review-gate.md) — pre-merge verification per alert class
 - [docs/reporting-model.md](docs/reporting-model.md) — summary fields, outcome semantics, reporting rules
+- [docs/discovery-model.md](docs/discovery-model.md) — remediation-unit discovery work list: schema, triage taxonomy, coverage gaps
 
 ## Reporting
 
@@ -84,6 +85,7 @@ The scaffold includes a weekly issue path. Use [scripts/run_report_only.py](scri
 SKILL.md
 README.md
 LICENSE
+requirements-dev.txt
 docs/
   code-scanning-policy.md
   secret-scanning-policy.md
@@ -91,6 +93,7 @@ docs/
   review-gate.md
   runtime-contract.md
   reporting-model.md
+  discovery-model.md
 skills/
   account-discovery/
   code-scanning-triage/
@@ -105,9 +108,16 @@ profiles/
   local/          # gitignored account-specific overlays
 scripts/
   collect_github_security_overview.py
+  discover_remediation_units.py
   dispatch_weekly_report.py
+  gh_security.py
   render_weekly_report.py
   run_report_only.py
+  validate_profile.py
+tests/
+.github/workflows/
+  publish-weekly-report.yml
+  validate-profiles.yml
 ```
 
 ## Skills
@@ -128,6 +138,38 @@ scripts/
 - [profiles/examples/acme-org/profile.yaml](profiles/examples/acme-org/profile.yaml) — organization profile example
 
 Account-specific runnable overlays should live under `profiles/local/`, which is gitignored.
+
+## Development
+
+Scripts and tests need PyYAML (the only dev dependency):
+
+```bash
+python3 -m pip install -r requirements-dev.txt
+python3 -m unittest discover -s tests
+```
+
+Or without installing anything:
+
+```bash
+uv run --with-requirements requirements-dev.txt -- python -m unittest discover -s tests
+```
+
+`scripts/validate_profile.py` enforces the profile invariants from
+[docs/operating-model.md](docs/operating-model.md): `owner_type` must be `org`
+or `user`, `active` repositories need verification commands for every target,
+targets that enable `dependabot` need declared ecosystems, protected-manual
+entries must exist and stay `manual_only`, and repository/target ids must be
+unique. Add `--check-local` on an operator machine to also verify local clone
+paths and `origin` remotes. CI
+(`validate-profiles.yml`) runs the test suite and lints the committed profiles.
+
+Generate a remediation work list (read-only) for one profile:
+
+```bash
+python3 scripts/discover_remediation_units.py \
+  --profile profiles/template/profile.yaml \
+  --output /tmp/security-worklist.json
+```
 
 ## License
 

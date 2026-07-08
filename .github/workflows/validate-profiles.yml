@@ -1,0 +1,38 @@
+name: Validate Profiles
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+      - name: Run test suite
+        run: python3 -m unittest discover -s tests
+
+  profiles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+      - name: Validate committed profiles
+        run: |
+          python3 scripts/validate_profile.py \
+            profiles/template/profile.yaml \
+            profiles/examples/acme-org/profile.yaml
