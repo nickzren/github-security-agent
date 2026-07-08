@@ -28,6 +28,15 @@ Each repository entry must declare one automation mode:
 
 `manual_only` repository entries remain read/report-only under every mutation mode. Secret-scanning cleanup PRs are never auto-merged by this scaffold. `pull_request` is not enough for auto-merge.
 
+Dependabot auto-merge is lockfile-only by default. A selected profile may allow
+manifest edits for a listed ecosystem only when the rule explicitly says so.
+The supported manifest allowance is intentionally narrow: the manifest diff
+must only change a direct dependency version specifier for packages in the
+active advisory set, with no dependency additions, removals, renames, extras
+churn, script/config edits, or unrelated manifest metadata changes. Anything
+outside that shape may still be opened as a PR when policy allows, but it must
+not auto-merge.
+
 A real verification command must:
 
 - exit non-zero on failure with no manual intervention

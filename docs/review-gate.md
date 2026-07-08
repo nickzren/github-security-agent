@@ -25,9 +25,12 @@ Additional requirements for `Dependabot` automatic merge:
 2. the selected version is the smallest patched version allowed by policy
 3. the diff satisfies the selected profile's `defaults.auto_merge.ecosystem_rules`, with `unlisted_ecosystem_outcome` applied when the ecosystem is not listed
 4. no manifest files changed unless the matching profile rule explicitly allows them
-5. no unrelated direct dependency churn appears
+5. when manifest changes are allowed, every manifest edit is limited to a version specifier for a direct dependency package in the active advisory set; dependency additions, dependency removals, renames, extras churn, script/config edits, or unrelated manifest metadata changes are not auto-mergeable
+6. no unrelated direct dependency churn appears
 
-If a `Dependabot` remediation changes manifest files, the allowed outcome is `opened_pr` or `blocked`, not `merged`.
+If a `Dependabot` remediation changes manifest files beyond the selected profile's
+manifest allowance, the allowed outcome is `opened_pr` or `blocked`, not
+`merged`.
 
 Additional requirements for `code scanning` promotion:
 

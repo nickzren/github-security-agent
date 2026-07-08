@@ -41,7 +41,7 @@ This skill decides whether a remediation unit is eligible for:
    - if a `code_scanning` remediation also has relevant mapped-target validation commands, those commands must pass too
    - if a `secret_scanning` remediation also has relevant mapped-target validation commands, those commands must pass too
 8. Inspect the diff for unrelated changes.
-9. For `Dependabot`, confirm the diff satisfies the selected profile's `defaults.auto_merge.ecosystem_rules` before allowing `merged`. If the ecosystem is not listed there, enforce `defaults.auto_merge.unlisted_ecosystem_outcome`. The public docs define the baseline contract, but the selected profile is the live source of truth.
+9. For `Dependabot`, confirm the diff satisfies the selected profile's `defaults.auto_merge.ecosystem_rules` before allowing `merged`. If the ecosystem is not listed there, enforce `defaults.auto_merge.unlisted_ecosystem_outcome`. If manifest files changed, merge is allowed only when the matching ecosystem rule permits manifest version-specifier bumps and every manifest edit is limited to a direct dependency package in the active advisory set. The public docs define the baseline contract, but the selected profile is the live source of truth.
 10. For `code_scanning`, confirm the rule id is allowlisted in the selected profile's `defaults.code_scanning.allowlisted_rules`, the diff matches the deterministic fix contract, and `merged` is allowed only when the rule is also listed in `defaults.code_scanning.auto_merge_rules`.
 11. For `secret_scanning`, confirm the selected profile's `defaults.secret_scanning` policy allows deterministic cleanup for this alert:
    - `prepare_cleanup_prs` must allow cleanup PR preparation
@@ -56,6 +56,7 @@ This skill decides whether a remediation unit is eligible for:
 ## Execution Rules
 
 - `merged` is not allowed when manifest files changed beyond what the selected profile's matching ecosystem rule permits.
+- `merged` is not allowed when a manifest diff adds, removes, renames, or otherwise churns dependencies, extras, scripts, config, or metadata unrelated to direct packages in the active advisory set.
 - `merged` is not allowed when the diff contains unrelated direct dependency churn.
 - `merged` is not allowed when the selected version is not the smallest patched version allowed by policy.
 - `merged` is not allowed when an adopted native PR no longer has current advisory-set equivalence with the active alert set.

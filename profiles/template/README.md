@@ -56,6 +56,14 @@ Missing required environment variables should resolve to `env_mismatch` or `regi
 
 `defaults.auto_merge.ecosystem_rules` defines per-ecosystem diff constraints for automatic merge. Any ecosystem not listed in `ecosystem_rules` falls back to `unlisted_ecosystem_outcome` (default `opened_pr`). These profile fields are the live source of truth for remediation and review skills.
 
+Manifest changes are blocked by default with `forbid_manifest_changes: true`.
+Set `forbid_manifest_changes: false` plus
+`allow_manifest_version_bump_only: true` only for ecosystems where unattended
+merge may update direct dependency version specifiers for packages in the
+active advisory set. This does not allow dependency additions, removals,
+renames, extras churn, script/config edits, or unrelated manifest metadata
+changes.
+
 That fallback is how manifest-review-only ecosystems such as `maven` can still enter remediation while remaining review-required instead of silently unsupported.
 
 `defaults.mutation_mode` defines what an unattended run may mutate. `report_only` permits discovery, alert reads, eligibility classification, rendering, and publish-only reporting, but forbids branch creation, pull request creation or update, pushes, and merges. `pull_request` permits verified fixes to be committed to remediation branches, pushed, and opened or updated as pull requests for `active` repository entries after the profile's verification and review-gate rules pass; it still forbids direct default-branch pushes and auto-merge. `auto_merge` permits only eligible Dependabot fixes and allowlisted deterministic code-scanning fixes to merge after local verification passes, required GitHub checks are green, and branch protection allows the merge. Secret-scanning cleanup PRs, manual-only repositories, unsupported rules, and failed verification remain review-required. Runners and dispatchers must fail closed when the field is missing or outside the supported vocabulary.

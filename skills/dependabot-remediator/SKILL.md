@@ -45,7 +45,7 @@ Read these files before changing anything:
 14. Verify an adopted native PR against a local checkout of its head ref. Never push commits to a Dependabot-authored branch.
 15. Re-stamp PR body metadata after adoption as a best-effort breadcrumb for human readers, never as the matching contract.
 16. If no usable native PR exists, work in the configured `local_path` for the mapped repository entry, create or reuse a branch that follows the profile branch template, and prepare the smallest patched fix.
-17. Keep the diff minimal and within the selected profile's `defaults.auto_merge.ecosystem_rules`. If the ecosystem is not listed there, follow `defaults.auto_merge.unlisted_ecosystem_outcome` instead of inventing a new policy. The public docs define the baseline contract, but the selected profile is the live source of truth.
+17. Keep the diff minimal and within the selected profile's `defaults.auto_merge.ecosystem_rules`. If the ecosystem is not listed there, follow `defaults.auto_merge.unlisted_ecosystem_outcome` instead of inventing a new policy. Manifest changes remain review-required unless the matching ecosystem rule explicitly permits version-specifier bumps; even then, only direct dependency version specifiers for packages in the active advisory set may change. The public docs define the baseline contract, but the selected profile is the live source of truth.
 18. Before verification, enforce the mapped target's structured environment requirements:
    - if `required_env_vars` are missing, stop with `env_mismatch` or `registry_auth_missing`
    - if the current runner platform is not listed in `supported_platforms`, stop with `env_mismatch`
@@ -64,6 +64,7 @@ Read these files before changing anything:
 - Do not mutate `manual_only` or `ignored` repository entries.
 - Use `gh` plus PAT-style authentication only.
 - Do not auto-merge unless the diff satisfies the selected profile's `defaults.auto_merge.ecosystem_rules`, with `unlisted_ecosystem_outcome` applied for ecosystems the profile does not list.
+- Do not auto-merge manifest changes unless the matching ecosystem rule permits direct version-specifier bumps and the manifest diff is limited to direct packages in the active advisory set.
 - Do not broaden dependency updates when a smaller patched fix exists.
 - Prefer adopting a usable native Dependabot PR over opening an agent-managed replacement.
 - Use `target_id`, not raw path text alone, for branch naming, PR reuse, PR metadata, and reporting.
